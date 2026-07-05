@@ -1,0 +1,89 @@
+{% liquid
+  assign total = section.blocks.size
+  assign total_minus_1 = total | minus: 1
+%}
+<style>
+  /* The animated pulse ring paints above the play button (z-index: 9) and
+     would swallow its clicks, so it must not receive pointer events. */
+  .luxa-video-card.luxa-center::before{pointer-events:none;}
+  .luxa-play-btn{z-index:11;}
+</style>
+<div class="luxa-section">
+  <div class="luxa-video-section">
+    <div class="luxa-sec-tag" style="color:#C9A96E;margin-bottom:6px;">{{ section.settings.eyebrow | default: 'חוויות אמיתיות' }}</div>
+    <div class="luxa-sec-title luxa-fade-up" style="color:#FFFFFF;margin-bottom:28px;">{{ section.settings.heading_prefix | default: 'ראי את' }} <span style="font-style:italic;color:#C9A96E;">{{ section.settings.heading_highlight | default: 'ההבדל' }}</span> {{ section.settings.heading_suffix | default: 'בעצמך' }}</div>
+
+    <div class="luxa-carousel-track" data-luxa-video-track>
+      {% for block in section.blocks %}
+        <div
+          class="luxa-video-card {% if forloop.first %}luxa-center{% elsif forloop.index0 == 1 %}luxa-right{% elsif forloop.index0 == total_minus_1 %}luxa-left{% elsif forloop.index0 == 2 %}luxa-far-right{% else %}luxa-far-left{% endif %}"
+          data-luxa-video-index="{{ forloop.index0 }}"
+          {{ block.shopify_attributes }}
+        >
+          {% if block.settings.video != blank %}
+            <div class="luxa-video-media">
+              {{ block.settings.video | video_tag: image_size: '600x', controls: false, playsinline: true, class: 'luxa-video-el' }}
+            </div>
+          {% else %}
+            <div class="luxa-video-placeholder"><div class="luxa-vph-mark">{{ section.settings.mark_letter | default: 'L' }}</div></div>
+          {% endif %}
+          <button type="button" class="luxa-play-btn" data-luxa-video-play aria-label="{{ 'accessibility.play_video' | t }}">
+            <div class="luxa-play-icon"></div>
+          </button>
+          <div class="luxa-video-label">
+            <div class="luxa-video-label-tag">{{ block.settings.tag }}</div>
+            <div class="luxa-video-label-text">{{ block.settings.text | newline_to_br }}</div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="luxa-auto-bar"><div class="luxa-auto-fill" data-luxa-video-fill></div></div>
+    <div class="luxa-carousel-dots">
+      {% for block in section.blocks %}
+        <div class="luxa-cdot{% if forloop.first %} active{% endif %}" data-luxa-video-dot></div>
+      {% endfor %}
+    </div>
+    <div class="luxa-carousel-arrows">
+      <button class="luxa-carr-btn" data-luxa-video-next aria-label="Next">›</button>
+      <button class="luxa-carr-btn" data-luxa-video-prev aria-label="Previous">‹</button>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Luxa video carousel",
+  "tag": "div",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "חוויות אמיתיות" },
+    { "type": "text", "id": "heading_prefix", "label": "Heading prefix", "default": "ראי את" },
+    { "type": "text", "id": "heading_highlight", "label": "Heading highlight word", "default": "ההבדל" },
+    { "type": "text", "id": "heading_suffix", "label": "Heading suffix", "default": "בעצמך" },
+    { "type": "text", "id": "mark_letter", "label": "Placeholder mark letter", "default": "L" }
+  ],
+  "blocks": [
+    {
+      "type": "video_card",
+      "name": "Video card",
+      "settings": [
+        { "type": "text", "id": "tag", "label": "Tag" },
+        { "type": "textarea", "id": "text", "label": "Label (2 lines)" },
+        { "type": "video", "id": "video", "label": "Video (optional — shows placeholder mark if empty)" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Luxa video carousel",
+      "blocks": [
+        { "type": "video_card", "settings": { "tag": "לקוחה אמיתית", "text": "תוצאות אחרי\nשבועיים" } },
+        { "type": "video_card", "settings": { "tag": "הדגמה", "text": "איך משתמשים\nבמברשת" } },
+        { "type": "video_card", "settings": { "tag": "ביקורת", "text": "חוות דעת\nלקוחה" } },
+        { "type": "video_card", "settings": { "tag": "טיפים", "text": "טיפים\nלשימוש" } },
+        { "type": "video_card", "settings": { "tag": "לפני ואחרי", "text": "השינוי\nשתרגישי" } }
+      ]
+    }
+  ]
+}
+{% endschema %}
