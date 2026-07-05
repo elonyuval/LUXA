@@ -7,6 +7,11 @@
      would swallow its clicks, so it must not receive pointer events. */
   .luxa-video-card.luxa-center::before{pointer-events:none;}
   .luxa-play-btn{z-index:11;}
+  /* While the video plays, drop the pulse ring and the caption so nothing
+     covers the picture or the native controls. */
+  .luxa-video-card.luxa-center.luxa-playing::before{display:none;}
+  .luxa-video-card.luxa-center.luxa-playing .luxa-video-label{opacity:0;}
+  .luxa-video-label{pointer-events:none;}
 </style>
 <div class="luxa-section">
   <div class="luxa-video-section">
