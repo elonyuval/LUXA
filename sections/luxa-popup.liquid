@@ -1,0 +1,47 @@
+<style>
+  .luxa-popup-code{font-family:'Montserrat',sans-serif;font-size:16px;letter-spacing:3px;font-weight:600;color:#1A1410;border:1px dashed #C9A96E;background:#FAF8F5;padding:10px 14px;margin:12px auto 4px;user-select:all;display:inline-block;direction:ltr;}
+  .luxa-popup-code-hint{font-size:9px;color:#8C7B6B;margin-top:6px;}
+</style>
+<div class="luxa-section">
+  <div class="luxa-popup-overlay" data-luxa-popup>
+    <div class="luxa-popup">
+      <button class="luxa-popup-close" data-luxa-popup-close aria-label="{{ 'accessibility.close' | t }}">✕</button>
+      <div class="luxa-popup-tag">{{ section.settings.eyebrow | default: 'מתנת ברוכה הבאה' }}</div>
+      <div class="luxa-popup-title">{{ section.settings.title | newline_to_br }}</div>
+      <div class="luxa-popup-sub">{{ section.settings.subtext }}</div>
+      {% form 'customer', id: 'luxa-popup-form' %}
+        <input type="hidden" name="contact[tags]" value="newsletter,luxa-popup">
+        {% if form.posted_successfully? %}
+          <p style="font-size:12px;color:#1A1410;">{{ section.settings.success_text | default: 'תודה! נרשמת בהצלחה.' }}</p>
+          {% if section.settings.discount_code != blank %}
+            <div class="luxa-popup-code">{{ section.settings.discount_code }}</div>
+            <p class="luxa-popup-code-hint">{{ section.settings.code_hint | default: 'הקלידי את הקוד בקופה וההנחה תירד מיד' }}</p>
+          {% endif %}
+        {% else %}
+          <input class="luxa-popup-input" type="email" name="contact[email]" placeholder="{{ section.settings.input_placeholder | default: 'כתובת המייל שלך' }}" required>
+          <button class="luxa-popup-btn" type="submit">{{ section.settings.button_text | default: 'אני רוצה את ההנחה' }}</button>
+        {% endif %}
+      {% endform %}
+      <span class="luxa-popup-skip" data-luxa-popup-close>{{ section.settings.skip_text | default: 'לא תודה, אני מעדיפה לשלם מחיר מלא' }}</span>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Luxa welcome popup",
+  "tag": "div",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "מתנת ברוכה הבאה" },
+    { "type": "textarea", "id": "title", "label": "Title", "default": "10% הנחה\nעל ההזמנה הראשונה" },
+    { "type": "text", "id": "subtext", "label": "Subtext", "default": "הירשמי לניוזלטר וקבלי קוד הנחה ישר למייל" },
+    { "type": "text", "id": "input_placeholder", "label": "Input placeholder", "default": "כתובת המייל שלך" },
+    { "type": "text", "id": "button_text", "label": "Button text", "default": "אני רוצה את ההנחה" },
+    { "type": "text", "id": "skip_text", "label": "Skip text", "default": "לא תודה, אני מעדיפה לשלם מחיר מלא" },
+    { "type": "text", "id": "success_text", "label": "Success message", "default": "תודה! נרשמת בהצלחה." },
+    { "type": "text", "id": "discount_code", "label": "Discount code shown after signup", "default": "NEW10" },
+    { "type": "text", "id": "code_hint", "label": "Hint under the code", "default": "הקלידי את הקוד בקופה וההנחה תירד מיד" }
+  ],
+  "presets": [{ "name": "Luxa welcome popup" }]
+}
+{% endschema %}

@@ -80,8 +80,15 @@ function initPopup() {
   const popup = document.querySelector('[data-luxa-popup]');
   if (!popup) return;
   const closeEls = popup.querySelectorAll('[data-luxa-popup-close]');
+  // Shopify reloads the page with ?customer_posted=true after the signup form
+  // submits; the popup must reopen then, or the success message (and the
+  // discount code in it) is never seen.
+  const posted = new URLSearchParams(window.location.search).get('customer_posted') === 'true';
 
-  if (!sessionStorage.getItem('luxa-popup-shown')) {
+  if (posted) {
+    popup.classList.add('open');
+    sessionStorage.setItem('luxa-popup-shown', '1');
+  } else if (!sessionStorage.getItem('luxa-popup-shown')) {
     setTimeout(() => {
       popup.classList.add('open');
       sessionStorage.setItem('luxa-popup-shown', '1');
