@@ -1,0 +1,488 @@
+{%- comment -%}
+  LUXA accessibility widget — Hebrew/RTL, self contained (markup + CSS + JS) so it
+  keeps working even if luxa-shared.js fails to load. Add it once to the
+  footer group and it shows on every page.
+
+  Choices are kept in localStorage and re-applied by the early script below,
+  before the page paints, so a visitor who needs high contrast never sees a
+  flash of the normal design.
+{%- endcomment -%}
+
+{%- liquid
+  assign side = section.settings.position | default: 'right'
+  assign statement_url = section.settings.statement_url | default: '/pages/accessibility'
+-%}
+
+<script>
+  // Runs at parse time, not on DOMContentLoaded: the saved preferences must be
+  // on <html> before the browser paints the page.
+  (function () {
+    try {
+      var saved = JSON.parse(localStorage.getItem('luxa-a11y') || '{}');
+      (saved.on || []).forEach(function (key) {
+        document.documentElement.classList.add('luxa-a11y-' + key);
+      });
+    } catch (e) {}
+  })();
+</script>
+
+<style>
+  /* ---------- effects applied to the whole storefront ---------- */
+
+  /* Colour filters paint through a fixed backdrop layer instead of a filter on
+     <html>: a filter on the root element turns it into the containing block for
+     fixed elements, which would break the header, the cart drawer and this
+     widget. */
+  .luxa-a11y-filter{position:fixed;inset:0;pointer-events:none;z-index:2147483000;display:none;}
+  html.luxa-a11y-invert .luxa-a11y-filter,
+  html.luxa-a11y-gray .luxa-a11y-filter{display:block;}
+  html.luxa-a11y-invert .luxa-a11y-filter{-webkit-backdrop-filter:invert(1) hue-rotate(180deg);backdrop-filter:invert(1) hue-rotate(180deg);}
+  html.luxa-a11y-gray .luxa-a11y-filter{-webkit-backdrop-filter:grayscale(1);backdrop-filter:grayscale(1);}
+  html.luxa-a11y-invert.luxa-a11y-gray .luxa-a11y-filter{-webkit-backdrop-filter:invert(1) hue-rotate(180deg) grayscale(1);backdrop-filter:invert(1) hue-rotate(180deg) grayscale(1);}
+
+  html.luxa-a11y-dark,
+  html.luxa-a11y-dark body,
+  html.luxa-a11y-dark *:not(svg):not(svg *){
+    background-color:#000 !important;background-image:none !important;color:#FFF !important;
+    border-color:#FFF !important;box-shadow:none !important;text-shadow:none !important;
+  }
+  html.luxa-a11y-dark a,html.luxa-a11y-dark a *{color:#FFFF00 !important;}
+  html.luxa-a11y-dark img,html.luxa-a11y-dark video{background:transparent !important;}
+
+  html.luxa-a11y-light,
+  html.luxa-a11y-light body,
+  html.luxa-a11y-light *:not(svg):not(svg *){
+    background-color:#FFF !important;background-image:none !important;color:#000 !important;
+    border-color:#000 !important;box-shadow:none !important;text-shadow:none !important;
+  }
+  html.luxa-a11y-light a,html.luxa-a11y-light a *{color:#0000CC !important;}
+
+  html.luxa-a11y-links a:not(.luxa-a11y-link){text-decoration:underline !important;text-underline-offset:3px;}
+  html.luxa-a11y-headings h1,html.luxa-a11y-headings h2,html.luxa-a11y-headings h3,
+  html.luxa-a11y-headings h4,html.luxa-a11y-headings h5,html.luxa-a11y-headings h6{
+    outline:2px dashed currentColor;outline-offset:4px;
+  }
+  html.luxa-a11y-readable body :not([data-luxa-a11y]):not([data-luxa-a11y] *){
+    font-family:Arial,'Helvetica Neue',Helvetica,sans-serif !important;font-style:normal !important;letter-spacing:normal !important;
+  }
+  html.luxa-a11y-spacing body :not([data-luxa-a11y]):not([data-luxa-a11y] *){
+    line-height:1.9 !important;letter-spacing:.08em !important;word-spacing:.16em !important;
+  }
+  html.luxa-a11y-cursor,html.luxa-a11y-cursor *{
+    cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 32 32'%3E%3Cpath d='M6 2l19 12-8.5 1.6L21 26l-4 2-4.5-10.4L6 22z' fill='%23000' stroke='%23fff' stroke-width='1.6'/%3E%3C/svg%3E") 6 2,auto !important;
+  }
+  html.luxa-a11y-motion *,html.luxa-a11y-motion *::before,html.luxa-a11y-motion *::after{
+    animation:none !important;transition:none !important;scroll-behavior:auto !important;
+  }
+  html.luxa-a11y-keyboard :focus{outline:3px solid #FFB300 !important;outline-offset:2px !important;}
+
+  /* ---------- the widget itself ---------- */
+  /* No stacking context on the wrapper: the backdrop-filter layer above must be
+     able to filter the whole page behind it, and the panel must sit over it. */
+  .luxa-a11y{font-family:'Montserrat',Arial,sans-serif;}
+  .luxa-a11y [hidden]{display:none !important;}
+  .luxa-a11y button{font-family:inherit;cursor:pointer;}
+
+  .luxa-a11y-toggle{
+    position:fixed;bottom:{{ section.settings.offset_bottom | default: 24 }}px;{{ side }}:20px;z-index:2147483600;
+    width:52px;height:52px;border-radius:50%;border:1px solid #C9A96E;background:#1A1410;color:#C9A96E;
+    display:flex;align-items:center;justify-content:center;padding:0;
+    box-shadow:0 6px 20px rgba(26,20,16,.28);transition:transform .2s ease;
+  }
+  .luxa-a11y-toggle:hover{transform:scale(1.06);}
+  .luxa-a11y-toggle svg{width:30px;height:30px;display:block;}
+
+  /* Click-outside catcher. It stays transparent on desktop so the visitor can
+     see each setting take effect on the page while the panel is open. */
+  .luxa-a11y-backdrop{position:fixed;inset:0;z-index:2147483500;background:transparent;}
+
+  .luxa-a11y-panel{
+    position:fixed;bottom:{{ section.settings.offset_bottom | default: 24 }}px;{{ side }}:20px;z-index:2147483600;
+    width:330px;max-width:calc(100vw - 40px);max-height:min(76vh,620px);overflow-y:auto;
+    background:#FFF;color:#1A1410;border:1px solid #E6DED3;border-radius:14px;
+    box-shadow:0 18px 50px rgba(26,20,16,.25);padding:18px 18px 14px;
+  }
+  .luxa-a11y-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;}
+  .luxa-a11y-title{font-size:15px;font-weight:600;letter-spacing:1px;margin:0;}
+  .luxa-a11y-close{background:none;border:none;font-size:18px;line-height:1;color:#8C7B6B;padding:6px;border-radius:6px;}
+  .luxa-a11y-close:hover{color:#1A1410;}
+
+  .luxa-a11y-label{font-size:10px;letter-spacing:1.5px;color:#8C7B6B;margin:14px 0 8px;}
+  .luxa-a11y-size{display:flex;align-items:center;gap:8px;}
+  .luxa-a11y-size button{
+    flex:0 0 auto;width:40px;height:40px;border:1px solid #E6DED3;background:#FAF8F5;color:#1A1410;
+    border-radius:10px;font-size:16px;font-weight:600;
+  }
+  .luxa-a11y-size button:hover:not(:disabled){border-color:#C9A96E;}
+  .luxa-a11y-size button:disabled{opacity:.4;cursor:not-allowed;}
+  .luxa-a11y-size-val{flex:1;text-align:center;font-size:12px;color:#1A1410;}
+
+  .luxa-a11y-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .luxa-a11y-opt{
+    display:flex;align-items:center;gap:8px;text-align:start;
+    border:1px solid #E6DED3;background:#FAF8F5;color:#1A1410;border-radius:10px;
+    padding:10px 10px;font-size:11.5px;line-height:1.35;min-height:46px;
+  }
+  .luxa-a11y-opt:hover{border-color:#C9A96E;}
+  .luxa-a11y-opt::before{
+    content:"";flex:0 0 auto;width:9px;height:9px;border-radius:50%;
+    border:1px solid #C9A96E;background:transparent;
+  }
+  .luxa-a11y-opt[aria-pressed="true"]{background:#1A1410;color:#FFF;border-color:#1A1410;}
+  .luxa-a11y-opt[aria-pressed="true"]::before{background:#C9A96E;border-color:#C9A96E;}
+
+  .luxa-a11y-reset{
+    width:100%;margin-top:12px;padding:11px;border-radius:10px;border:1px solid #C9A96E;
+    background:#FFF;color:#1A1410;font-size:11.5px;letter-spacing:1px;
+  }
+  .luxa-a11y-reset:hover{background:#C9A96E;color:#FFF;}
+
+  .luxa-a11y-foot{margin-top:14px;padding-top:12px;border-top:1px solid #E6DED3;font-size:10.5px;color:#8C7B6B;line-height:1.7;}
+  .luxa-a11y-foot a{color:#1A1410;text-decoration:underline;}
+
+  @media (max-width:600px){
+    .luxa-a11y-panel{inset-inline:12px;bottom:12px;width:auto;max-width:none;max-height:82vh;}
+    .luxa-a11y-backdrop{background:rgba(26,20,16,.45);}
+  }
+
+  /* Keep the widget usable inside the forced-colour modes above. */
+  html.luxa-a11y-dark .luxa-a11y-panel,html.luxa-a11y-dark .luxa-a11y-toggle,
+  html.luxa-a11y-dark .luxa-a11y-opt,html.luxa-a11y-dark .luxa-a11y-size button,
+  html.luxa-a11y-dark .luxa-a11y-reset{background:#000 !important;color:#FFF !important;border:1px solid #FFF !important;}
+  html.luxa-a11y-dark .luxa-a11y-opt[aria-pressed="true"],
+  html.luxa-a11y-dark .luxa-a11y-opt[aria-pressed="true"] *{background:#FFFF00 !important;color:#000 !important;}
+  html.luxa-a11y-light .luxa-a11y-panel,html.luxa-a11y-light .luxa-a11y-toggle,
+  html.luxa-a11y-light .luxa-a11y-opt,html.luxa-a11y-light .luxa-a11y-size button,
+  html.luxa-a11y-light .luxa-a11y-reset{background:#FFF !important;color:#000 !important;border:1px solid #000 !important;}
+  html.luxa-a11y-light .luxa-a11y-opt[aria-pressed="true"],
+  html.luxa-a11y-light .luxa-a11y-opt[aria-pressed="true"] *{background:#000 !important;color:#FFF !important;}
+</style>
+
+<div class="luxa-a11y" data-luxa-a11y dir="rtl" lang="he">
+  <div class="luxa-a11y-filter" aria-hidden="true"></div>
+
+  <button
+    type="button"
+    class="luxa-a11y-toggle"
+    data-luxa-a11y-toggle
+    aria-expanded="false"
+    aria-controls="luxa-a11y-panel"
+    aria-label="{{ section.settings.button_label | default: 'תפריט נגישות' }}"
+    title="{{ section.settings.button_label | default: 'תפריט נגישות' }}"
+    accesskey="a"
+  >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="12" r="10"></circle>
+      <circle cx="12" cy="6.6" r="1.5" fill="currentColor" stroke="none"></circle>
+      <path d="M6.6 9.6h10.8M12 9.9v4.2M12 14.1l-2.2 4.5M12 14.1l2.2 4.5"></path>
+    </svg>
+  </button>
+
+  <div class="luxa-a11y-backdrop" data-luxa-a11y-backdrop hidden></div>
+
+  <div
+    class="luxa-a11y-panel"
+    id="luxa-a11y-panel"
+    data-luxa-a11y-panel
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="luxa-a11y-title"
+    hidden
+  >
+    <div class="luxa-a11y-head">
+      <h2 class="luxa-a11y-title" id="luxa-a11y-title">{{ section.settings.panel_title | default: 'תפריט נגישות' }}</h2>
+      <button type="button" class="luxa-a11y-close" data-luxa-a11y-close aria-label="סגירת תפריט הנגישות">✕</button>
+    </div>
+
+    <div class="luxa-a11y-label">גודל הטקסט</div>
+    <div class="luxa-a11y-size">
+      <button type="button" data-luxa-a11y-size="-1" aria-label="הקטנת גודל הטקסט">−</button>
+      <span class="luxa-a11y-size-val" data-luxa-a11y-size-val aria-live="polite">רגיל</span>
+      <button type="button" data-luxa-a11y-size="1" aria-label="הגדלת גודל הטקסט">+</button>
+    </div>
+
+    <div class="luxa-a11y-label">צבע וניגודיות</div>
+    <div class="luxa-a11y-grid">
+      <button type="button" class="luxa-a11y-opt" data-luxa-a11y-opt="dark" aria-pressed="false">ניגודיות כהה</button>
+      <button type="button" class="luxa-a11y-opt" data-luxa-a11y-opt="light" aria-pressed="false">ניגודיות בהירה</button>
+      <button type="button" class="luxa-a11y-opt" data-luxa-a11y-opt="invert" aria-pressed="false">היפוך צבעים</button>
+      <button type="button" class="luxa-a11y-opt" data-luxa-a11y-opt="gray" aria-pressed="false">גווני אפור</button>
+    </div>
+
+    <div class="luxa-a11y-label">קריאות</div>
+    <div class="luxa-a11y-grid">
+      <button type="button" class="luxa-a11y-opt" data-luxa-a11y-opt="readable" aria-pressed="false">גופן קריא</button>
+      <button type="button" class="luxa-a11y-opt" data-luxa-a11y-opt="spacing" aria-pressed="false">ריווח מוגדל</button>
+      <button type="button" class="luxa-a11y-opt" data-luxa-a11y-opt="links" aria-pressed="false">הדגשת קישורים</button>
+      <button type="button" class="luxa-a11y-opt" data-luxa-a11y-opt="headings" aria-pressed="false">הדגשת כותרות</button>
+    </div>
+
+    <div class="luxa-a11y-label">ניווט</div>
+    <div class="luxa-a11y-grid">
+      <button type="button" class="luxa-a11y-opt" data-luxa-a11y-opt="cursor" aria-pressed="false">סמן עכבר גדול</button>
+      <button type="button" class="luxa-a11y-opt" data-luxa-a11y-opt="motion" aria-pressed="false">עצירת אנימציות</button>
+      <button type="button" class="luxa-a11y-opt" data-luxa-a11y-opt="keyboard" aria-pressed="false">הדגשת מיקוד מקלדת</button>
+    </div>
+
+    <button type="button" class="luxa-a11y-reset" data-luxa-a11y-reset>איפוס הגדרות הנגישות</button>
+
+    <div class="luxa-a11y-foot">
+      <a class="luxa-a11y-link" href="{{ statement_url }}">הצהרת הנגישות של האתר</a>
+      {%- if section.settings.contact_email != blank %}
+        <br>נתקלתם בבעיית נגישות? נשמח לשמוע:
+        <a class="luxa-a11y-link" href="mailto:{{ section.settings.contact_email }}">{{ section.settings.contact_email }}</a>
+      {%- endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var wrap = document.querySelector('[data-luxa-a11y]');
+    if (!wrap) return;
+
+    var STORE_KEY = 'luxa-a11y';
+    var SCALES = [1, 1.15, 1.3, 1.5];
+    var SCALE_NAMES = ['רגיל', 'גדול', 'גדול מאוד', 'ענק'];
+    // Only one of these may be active at a time — combining them cancels out.
+    var EXCLUSIVE = ['dark', 'light', 'invert'];
+    // Text nodes live on all of these; <div> is included because the theme puts
+    // plenty of copy straight into layout wrappers.
+    var TEXT_SELECTOR =
+      'body p,body li,body a,body span,body button,body input,body textarea,body select,body label,' +
+      'body h1,body h2,body h3,body h4,body h5,body h6,body td,body th,body dt,body dd,' +
+      'body blockquote,body figcaption,body small,body strong,body em,body div';
+
+    // The section lives in the footer group, which would put the widget at the
+    // very end of the tab order — keyboard users need it near the start. The
+    // theme editor re-renders sections in place, so leave the DOM alone there.
+    if (!(window.Shopify && window.Shopify.designMode) && wrap.parentNode !== document.body) {
+      document.body.insertBefore(wrap, document.body.firstChild);
+    }
+
+    var panel = wrap.querySelector('[data-luxa-a11y-panel]');
+    var backdrop = wrap.querySelector('[data-luxa-a11y-backdrop]');
+    var toggleBtn = wrap.querySelector('[data-luxa-a11y-toggle]');
+    var sizeVal = wrap.querySelector('[data-luxa-a11y-size-val]');
+    var options = Array.prototype.slice.call(wrap.querySelectorAll('[data-luxa-a11y-opt]'));
+    var sizeBtns = Array.prototype.slice.call(wrap.querySelectorAll('[data-luxa-a11y-size]'));
+
+    var state = load();
+    // Original font sizes, captured before any scaling is applied, so the reset
+    // always returns to the design's real values.
+    var baseSizes = new WeakMap();
+    var observer = null;
+    var rescaleTimer = null;
+
+    function load() {
+      try {
+        var saved = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+        return {
+          on: Array.isArray(saved.on) ? saved.on : [],
+          size: typeof saved.size === 'number' && saved.size >= 0 && saved.size < SCALES.length ? saved.size : 0
+        };
+      } catch (e) {
+        return { on: [], size: 0 };
+      }
+    }
+
+    function save() {
+      try {
+        localStorage.setItem(STORE_KEY, JSON.stringify(state));
+      } catch (e) {}
+    }
+
+    function isOn(key) {
+      return state.on.indexOf(key) !== -1;
+    }
+
+    function setOption(key, on) {
+      if (on && EXCLUSIVE.indexOf(key) !== -1) {
+        EXCLUSIVE.forEach(function (other) {
+          if (other !== key && isOn(other)) setOption(other, false);
+        });
+      }
+      state.on = state.on.filter(function (k) {
+        return k !== key;
+      });
+      if (on) state.on.push(key);
+      root.classList.toggle('luxa-a11y-' + key, on);
+      if (key === 'motion' && on) pauseMedia();
+      save();
+      render();
+    }
+
+    function pauseMedia() {
+      document.querySelectorAll('video').forEach(function (video) {
+        if (!video.paused) video.pause();
+      });
+    }
+
+    function applyFontScale() {
+      var factor = SCALES[state.size];
+      document.querySelectorAll(TEXT_SELECTOR).forEach(function (el) {
+        if (el.closest('[data-luxa-a11y]')) return;
+        var base = baseSizes.get(el);
+        if (base === undefined) {
+          base = parseFloat(window.getComputedStyle(el).fontSize);
+          if (!base) return;
+          baseSizes.set(el, base);
+        }
+        el.style.fontSize = factor === 1 ? '' : (base * factor).toFixed(2) + 'px';
+      });
+      watchNewContent(factor !== 1);
+    }
+
+    // Drawers, quick-add modals and carousels inject markup after load; keep the
+    // scaling applied to it, but only while a scale is actually active.
+    function watchNewContent(active) {
+      if (active && !observer) {
+        observer = new MutationObserver(function () {
+          clearTimeout(rescaleTimer);
+          rescaleTimer = setTimeout(applyFontScale, 250);
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+      } else if (!active && observer) {
+        observer.disconnect();
+        observer = null;
+      }
+    }
+
+    function setSize(step) {
+      var next = Math.min(SCALES.length - 1, Math.max(0, state.size + step));
+      if (next === state.size) return;
+      state.size = next;
+      save();
+      applyFontScale();
+      render();
+    }
+
+    function reset() {
+      state.on.slice().forEach(function (key) {
+        root.classList.remove('luxa-a11y-' + key);
+      });
+      state = { on: [], size: 0 };
+      save();
+      applyFontScale();
+      render();
+    }
+
+    function render() {
+      options.forEach(function (btn) {
+        btn.setAttribute('aria-pressed', isOn(btn.dataset.luxaA11yOpt) ? 'true' : 'false');
+      });
+      sizeVal.textContent = SCALE_NAMES[state.size];
+      sizeBtns.forEach(function (btn) {
+        var step = parseInt(btn.dataset.luxaA11ySize, 10);
+        btn.disabled = state.size + step < 0 || state.size + step > SCALES.length - 1;
+      });
+    }
+
+    var lastFocus = null;
+
+    function openPanel() {
+      lastFocus = document.activeElement;
+      panel.hidden = false;
+      backdrop.hidden = false;
+      toggleBtn.setAttribute('aria-expanded', 'true');
+      panel.querySelector('[data-luxa-a11y-close]').focus();
+    }
+
+    function closePanel() {
+      panel.hidden = true;
+      backdrop.hidden = true;
+      toggleBtn.setAttribute('aria-expanded', 'false');
+      (lastFocus || toggleBtn).focus();
+    }
+
+    toggleBtn.addEventListener('click', function () {
+      if (panel.hidden) openPanel();
+      else closePanel();
+    });
+    wrap.querySelector('[data-luxa-a11y-close]').addEventListener('click', closePanel);
+    backdrop.addEventListener('click', closePanel);
+    wrap.querySelector('[data-luxa-a11y-reset]').addEventListener('click', reset);
+
+    options.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var key = btn.dataset.luxaA11yOpt;
+        setOption(key, !isOn(key));
+      });
+    });
+
+    sizeBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        setSize(parseInt(btn.dataset.luxaA11ySize, 10));
+      });
+    });
+
+    // Alt+A opens the menu from anywhere. event.code is used because a Hebrew
+    // keyboard layout reports event.key as 'ש' for the same physical key.
+    document.addEventListener('keydown', function (event) {
+      if (!event.altKey || event.ctrlKey || event.metaKey) return;
+      if (event.code !== 'KeyA' && (event.key || '').toLowerCase() !== 'a') return;
+      event.preventDefault();
+      if (panel.hidden) openPanel();
+      else closePanel();
+    });
+
+    // Esc closes; Tab stays inside the open panel.
+    document.addEventListener('keydown', function (event) {
+      if (panel.hidden) return;
+      if (event.key === 'Escape') {
+        closePanel();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      var focusable = panel.querySelectorAll('button:not(:disabled),a[href]');
+      if (!focusable.length) return;
+      var first = focusable[0];
+      var last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
+
+    function start() {
+      if (state.size > 0) applyFontScale();
+      if (isOn('motion')) pauseMedia();
+      render();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', start);
+    } else {
+      start();
+    }
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Luxa accessibility",
+  "tag": "div",
+  "settings": [
+    {
+      "type": "select",
+      "id": "position",
+      "label": "Button position",
+      "options": [
+        { "value": "right", "label": "Right" },
+        { "value": "left", "label": "Left" }
+      ],
+      "default": "right"
+    },
+    { "type": "range", "id": "offset_bottom", "label": "Distance from bottom", "min": 12, "max": 140, "step": 4, "unit": "px", "default": 24 },
+    { "type": "text", "id": "button_label", "label": "Button label (screen readers)", "default": "תפריט נגישות" },
+    { "type": "text", "id": "panel_title", "label": "Panel title", "default": "תפריט נגישות" },
+    { "type": "url", "id": "statement_url", "label": "Accessibility statement page", "info": "Defaults to /pages/accessibility" },
+    { "type": "text", "id": "contact_email", "label": "Accessibility contact email", "default": "elonyuval0201@gmail.com" }
+  ],
+  "presets": [{ "name": "Luxa accessibility" }]
+}
+{% endschema %}
