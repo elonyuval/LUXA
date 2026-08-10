@@ -1,0 +1,301 @@
+{%- comment -%}
+  LUXAMOM "buy together" bundle.
+
+  The product list and the discount ladder are both derived from whichever
+  products are actually available, so a product that is still a draft (or is
+  removed later) drops out of the card instead of hiding the whole section.
+  Each ladder step carries its own rate, and the script reads the rates from
+  the markup — the tiers live in one place.
+
+  The matching cart discounts are automatic discounts in the admin:
+  2 items → 10%, 3 items → 15%, 4 items → 20%.
+{%- endcomment -%}
+
+{%- liquid
+  assign be_bag = all_products['תיק-חיתולים-3-ב-1-luxamom']
+  assign be_warmer = all_products['מחמם-בקבוק-usb-נייד-luxamom']
+  assign be_cushion = all_products['כרית-מגן-ראש-לפעוט-luxamom']
+  assign be_sling = all_products['מנשא-חיבוק-luxamom']
+
+  assign be_count = 0
+  if be_bag != blank
+    assign be_count = be_count | plus: 1
+  endif
+  if be_warmer != blank
+    assign be_count = be_count | plus: 1
+  endif
+  if be_cushion != blank
+    assign be_count = be_count | plus: 1
+  endif
+  if be_sling != blank
+    assign be_count = be_count | plus: 1
+  endif
+-%}
+
+{%- if be_count > 1 -%}
+<style>
+.lxm-be{background:#F3ECE3;padding:72px 0;direction:rtl;font-family:'Assistant','Segoe UI',sans-serif;color:#3a2f28;line-height:1.6;}
+.lxm-be *{box-sizing:border-box;}
+.lxm-be-wrap{max-width:1080px;margin:0 auto;padding:0 28px;}
+.lxm-be-eyebrow{font-size:13px;letter-spacing:.14em;font-weight:600;color:#c17b7e;text-transform:uppercase;text-align:center;margin:0 0 12px;}
+.lxm-be-title{font-family:'Frank Ruhl',serif;font-weight:700;font-size:clamp(26px,3.6vw,34px);color:#6b5646;text-align:center;margin:0;}
+.lxm-be-sub{text-align:center;font-size:16px;opacity:.8;margin:12px 0 34px;}
+.lxm-be-card{background:#FBF8F4;border:1px solid rgba(139,112,96,.14);border-radius:22px;padding:26px;box-shadow:0 14px 36px rgba(107,86,70,.10);}
+.lxm-be-row{display:grid;gap:16px;}
+.lxm-be-pick{border:1.5px solid rgba(139,112,96,.2);border-radius:16px;padding:14px;background:#FAF6F1;cursor:pointer;position:relative;text-align:center;transition:border-color .2s ease,background .2s ease;}
+.lxm-be-pick.lxm-be-on{border-color:#8B7060;background:#F3ECE3;}
+.lxm-be-pick.lxm-be-lock{cursor:default;}
+.lxm-be-tick{position:absolute;top:12px;inset-inline-start:12px;width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(139,112,96,.35);background:#fff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;line-height:1;}
+.lxm-be-pick.lxm-be-on .lxm-be-tick{background:#8B7060;border-color:#8B7060;}
+.lxm-be-flag{position:absolute;top:12px;inset-inline-end:12px;background:#D9989A;color:#fff;font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap;}
+.lxm-be-img{aspect-ratio:1;border-radius:12px;overflow:hidden;background:#F3ECE3;margin-bottom:12px;}
+.lxm-be-img img{width:100%;height:100%;object-fit:cover;display:block;}
+.lxm-be-name{font-size:14.5px;font-weight:600;color:#6b5646;line-height:1.35;margin:0 0 4px;}
+.lxm-be-price{font-size:14px;color:#6b5646;opacity:.75;direction:ltr;unicode-bidi:isolate;display:block;}
+.lxm-be-pick select{margin-top:10px;width:100%;border:1px solid rgba(139,112,96,.25);border-radius:999px;padding:7px 12px;font-family:'Assistant',sans-serif;font-size:13px;color:#6b5646;background:#fff;direction:rtl;cursor:pointer;}
+.lxm-be-ladder{display:flex;gap:10px;margin-top:22px;}
+.lxm-be-step{flex:1;text-align:center;padding:12px 8px;border-radius:14px;background:#F3ECE3;font-size:13px;color:#6b5646;line-height:1.45;position:relative;transition:background .25s ease,color .25s ease;}
+.lxm-be-step b{display:block;font-weight:700;font-size:14px;}
+.lxm-be-step.lxm-be-act{background:#8B7060;color:#FBF8F4;}
+.lxm-be-step-flag{position:absolute;top:-10px;inset-inline-end:10px;background:#D9989A;color:#fff;font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap;}
+.lxm-be-next{margin-top:14px;background:#f1dcdb;color:#8a4a4d;border-radius:14px;padding:12px 14px;text-align:center;font-size:14px;font-weight:600;}
+.lxm-be-foot{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-top:18px;padding-top:18px;border-top:1px solid rgba(139,112,96,.15);}
+.lxm-be-total{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;}
+.lxm-be-was{font-size:17px;color:#8B7060;opacity:.6;text-decoration:line-through;direction:ltr;unicode-bidi:isolate;}
+.lxm-be-now{font-family:'Frank Ruhl',serif;font-size:34px;font-weight:700;color:#6b5646;direction:ltr;unicode-bidi:isolate;}
+.lxm-be-save{font-size:13px;font-weight:700;color:#8a4a4d;background:#f1dcdb;padding:5px 12px;border-radius:999px;}
+.lxm-be-add{padding:15px 38px;border-radius:999px;border:none;background:#8B7060;color:#FBF8F4;font-family:'Assistant',sans-serif;font-size:16px;font-weight:600;cursor:pointer;transition:background .25s ease;}
+.lxm-be-add:hover{background:#6b5646;}
+.lxm-be-add[disabled]{opacity:.45;cursor:default;}
+@media(max-width:980px){
+  .lxm-be-row{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+}
+@media(max-width:760px){
+  .lxm-be{padding:52px 0;}
+  .lxm-be-card{padding:18px;}
+  .lxm-be-row{grid-template-columns:1fr !important;gap:12px;}
+  .lxm-be-pick{display:grid;grid-template-columns:80px minmax(0,1fr);gap:14px;align-items:center;text-align:start;padding:12px;}
+  .lxm-be-tick{inset-inline-start:auto;inset-inline-end:12px;}
+  .lxm-be-flag{position:static;display:inline-block;margin-bottom:4px;}
+  .lxm-be-img{margin-bottom:0;}
+  .lxm-be-name{padding-inline-end:32px;}
+  .lxm-be-ladder{flex-direction:column;gap:8px;}
+  .lxm-be-step-flag{inset-inline-end:14px;}
+  .lxm-be-foot{justify-content:center;text-align:center;}
+  .lxm-be-total{justify-content:center;width:100%;}
+  .lxm-be-add{width:100%;}
+}
+</style>
+
+<section class="lxm-be">
+  <div class="lxm-be-wrap">
+    <p class="lxm-be-eyebrow">חסכו ביחד</p>
+    <h2 class="lxm-be-title">קני ביחד וחסכי</h2>
+    <p class="lxm-be-sub">כל מוצר שמתווסף מוריד את המחיר. ההנחה נכנסת אוטומטית בסל — בלי קוד.</p>
+
+    <div class="lxm-be-card" data-be>
+      <div class="lxm-be-row" style="grid-template-columns:repeat({{ be_count }},minmax(0,1fr));">
+        {%- for n in (1..4) -%}
+          {%- case n -%}
+            {%- when 1 -%}{%- assign bep = be_bag -%}
+            {%- when 2 -%}{%- assign bep = be_warmer -%}
+            {%- when 3 -%}{%- assign bep = be_cushion -%}
+            {%- when 4 -%}{%- assign bep = be_sling -%}
+          {%- endcase -%}
+          {%- if bep == blank -%}{%- continue -%}{%- endif -%}
+          {%- liquid
+            assign be_cur = false
+            if product != blank and product.id == bep.id
+              assign be_cur = true
+            endif
+            # Products sold both singly and as a pair expose the quantity as a
+            # second option; only the single unit belongs in a mix-and-match bundle.
+            assign be_single_qty = bep.variants | map: 'option2' | uniq | first
+          -%}
+          <div
+            class="lxm-be-pick{% if be_cur %} lxm-be-on lxm-be-lock{% endif %}"
+            data-be-pick
+            data-be-price="{{ bep.price }}"
+            {% if be_cur %}data-be-on="1" data-be-lock="1"{% else %}role="button" tabindex="0" aria-pressed="false"{% endif %}
+          >
+            <span class="lxm-be-tick" aria-hidden="true">✓</span>
+            {%- if be_cur -%}<span class="lxm-be-flag">המוצר שלך</span>{%- endif -%}
+            <div class="lxm-be-img">
+              <img src="{{ bep.featured_image | image_url: width: 500 }}" alt="{{ bep.featured_image.alt | default: bep.title | escape }}" loading="lazy">
+            </div>
+            <div class="lxm-be-info">
+              <p class="lxm-be-name">{{ bep.title | remove: ' LUXAMOM' }}</p>
+              <span class="lxm-be-price">{{ bep.price | money_without_trailing_zeros }}</span>
+              {%- assign be_options = 0 -%}
+              {%- for v in bep.variants -%}
+                {%- if v.option2 != blank and v.option2 != be_single_qty -%}{%- continue -%}{%- endif -%}
+                {%- assign be_options = be_options | plus: 1 -%}
+              {%- endfor -%}
+              {%- if be_options > 1 -%}
+                <select data-be-variant aria-label="בחירת גוון עבור {{ bep.title }}">
+                  {%- for v in bep.variants -%}
+                    {%- if v.option2 != blank and v.option2 != be_single_qty -%}{%- continue -%}{%- endif -%}
+                    <option value="{{ v.id }}"{% unless v.available %} disabled{% endunless %}>{{ v.option1 | default: v.title }}</option>
+                  {%- endfor -%}
+                </select>
+              {%- else -%}
+                <input type="hidden" data-be-variant value="{{ bep.selected_or_first_available_variant.id }}">
+              {%- endif -%}
+            </div>
+          </div>
+        {%- endfor -%}
+      </div>
+
+      <div class="lxm-be-ladder">
+        <div class="lxm-be-step" data-be-step="1" data-be-rate="0"><b>מוצר אחד</b>מחיר מלא</div>
+        {%- for step in (2..be_count) -%}
+          {%- liquid
+            case step
+              when 2
+                assign step_rate = 10
+                assign step_name = 'שניים'
+              when 3
+                assign step_rate = 15
+                assign step_name = 'שלושה'
+              when 4
+                assign step_rate = 20
+                assign step_name = 'ארבעה'
+            endcase
+          -%}
+          <div class="lxm-be-step" data-be-step="{{ step }}" data-be-rate="{{ step_rate }}">
+            {%- if step == be_count -%}<span class="lxm-be-step-flag">המשתלם ביותר</span>{%- endif -%}
+            <b>{{ step_name }}</b>{{ step_rate }}% הנחה
+          </div>
+        {%- endfor -%}
+      </div>
+
+      <p class="lxm-be-next" data-be-next></p>
+
+      <div class="lxm-be-foot">
+        <div class="lxm-be-total">
+          <span class="lxm-be-was" data-be-was></span>
+          <span class="lxm-be-now" data-be-now></span>
+          <span class="lxm-be-save" data-be-save></span>
+        </div>
+        <button type="button" class="lxm-be-add" data-be-add>הוספה לסל</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+  var wrap = document.querySelector('[data-be]');
+  if (!wrap) return;
+  var picks = Array.prototype.slice.call(wrap.querySelectorAll('[data-be-pick]'));
+  var steps = Array.prototype.slice.call(wrap.querySelectorAll('[data-be-step]'));
+  var nextEl = wrap.querySelector('[data-be-next]');
+  var wasEl = wrap.querySelector('[data-be-was]');
+  var nowEl = wrap.querySelector('[data-be-now]');
+  var saveEl = wrap.querySelector('[data-be-save]');
+  var addBtn = wrap.querySelector('[data-be-add]');
+  if (!picks.length || !addBtn) return;
+
+  // Prices are no longer all round numbers, so agorot have to survive the total.
+  function money(cents){
+    var value = Math.round(cents) / 100;
+    var fraction = Math.round(value * 100) % 100 === 0 ? 0 : 2;
+    return '₪' + value.toLocaleString('he-IL', { minimumFractionDigits: fraction, maximumFractionDigits: 2 });
+  }
+  function priceOf(p){ return parseInt(p.getAttribute('data-be-price'), 10) || 0; }
+  function nameOf(p){ return p.querySelector('.lxm-be-name').textContent.trim(); }
+  function isOn(p){ return p.hasAttribute('data-be-on'); }
+
+  // The ladder in the markup is the single source of truth for the tiers.
+  function rateFor(count){
+    var rate = 0;
+    steps.forEach(function(step){
+      if (parseInt(step.getAttribute('data-be-step'), 10) <= count) {
+        rate = parseFloat(step.getAttribute('data-be-rate')) / 100;
+      }
+    });
+    return rate;
+  }
+
+  function render(){
+    var on = picks.filter(isOn);
+    var off = picks.filter(function(p){ return !isOn(p); });
+    var total = on.reduce(function(a, p){ return a + priceOf(p); }, 0);
+    var rate = rateFor(on.length);
+    var now = Math.round(total * (1 - rate));
+
+    steps.forEach(function(step){
+      var isActive = parseInt(step.getAttribute('data-be-step'), 10) === on.length;
+      step.classList.toggle('lxm-be-act', isActive);
+    });
+
+    wasEl.textContent = rate ? money(total) : '';
+    nowEl.textContent = money(on.length ? now : 0);
+    saveEl.textContent = rate ? 'חסכת ' + money(total - now) : '';
+    saveEl.style.display = rate ? 'inline-block' : 'none';
+
+    if (!on.length) {
+      nextEl.textContent = 'בחרי מוצר כדי להתחיל';
+    } else if (!off.length) {
+      nextEl.textContent = 'הסט המלא — החיסכון הגדול ביותר';
+    } else {
+      var cheapest = off.slice().sort(function(a, b){ return priceOf(a) - priceOf(b); })[0];
+      var nextRate = rateFor(on.length + 1);
+      if (nextRate > rate) {
+        var nextTotal = total + priceOf(cheapest);
+        var extra = Math.round(nextTotal * nextRate) - Math.round(total * rate);
+        nextEl.textContent =
+          'הוסיפי ' + nameOf(cheapest) + ' וקבלי ' + Math.round(nextRate * 100) + '% הנחה — עוד ' + money(extra) + ' חיסכון';
+      } else {
+        nextEl.textContent = 'הוסיפי ' + nameOf(cheapest) + ' לסט';
+      }
+    }
+
+    addBtn.disabled = !on.length;
+    addBtn.textContent = on.length > 1 ? 'הוספת ' + on.length + ' מוצרים לסל' : (on.length === 1 ? 'הוספה לסל' : 'בחרי מוצרים');
+  }
+
+  function toggle(p){
+    if (p.hasAttribute('data-be-lock')) return;
+    if (isOn(p)) { p.removeAttribute('data-be-on'); p.classList.remove('lxm-be-on'); p.setAttribute('aria-pressed', 'false'); }
+    else { p.setAttribute('data-be-on', '1'); p.classList.add('lxm-be-on'); p.setAttribute('aria-pressed', 'true'); }
+    render();
+  }
+
+  picks.forEach(function(p){
+    p.addEventListener('click', function(e){
+      if (e.target.closest('[data-be-variant]')) return;
+      toggle(p);
+    });
+    p.addEventListener('keydown', function(e){
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(p); }
+    });
+  });
+
+  addBtn.addEventListener('click', function(){
+    var items = picks.filter(isOn).map(function(p){
+      return { id: p.querySelector('[data-be-variant]').value, quantity: 1 };
+    });
+    if (!items.length) return;
+    var label = addBtn.textContent;
+    addBtn.disabled = true;
+    addBtn.textContent = 'מוסיף לסל...';
+    fetch('/cart/add.js', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ items: items })
+    }).then(function(r){ return r.json(); }).then(function(){
+      addBtn.disabled = false;
+      addBtn.textContent = label;
+      if (window.LXMCart && window.LXMCart.open) { window.LXMCart.open(); }
+      else { window.location.href = '/cart'; }
+    }).catch(function(){
+      addBtn.disabled = false;
+      addBtn.textContent = label;
+    });
+  });
+
+  render();
+})();
+</script>
+{%- endif -%}

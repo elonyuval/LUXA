@@ -206,12 +206,10 @@
 
 {%- liquid
   assign current_variant = product.selected_or_first_available_variant
-  assign color_option_index = 0
-  for opt in product.options_with_values
-    if opt.name == 'צבע'
-      assign color_option_index = forloop.index0
-    endif
-  endfor
+  # Derived from the variants rather than from options_with_values, whose values
+  # are objects — comparing them against variant.option1 would never match.
+  assign color_values = product.variants | map: 'option1' | uniq
+  assign qty_values = product.variants | map: 'option2' | uniq
 -%}
 
 <div class="lxm-pdp">
@@ -309,7 +307,7 @@
         <div class="lxm-picker">
           <span class="lxm-picker-label">צבע: <strong data-selected-color-name>{{ current_variant.option1 }}</strong></span>
           <div class="lxm-swatch-row">
-            {% for value in product.options_with_values[color_option_index].values %}
+            {% for value in color_values %}
               {%- liquid
                 assign swatch_img = ''
                 for variant in product.variants
@@ -334,7 +332,7 @@
         <div class="lxm-picker">
           <span class="lxm-picker-label">כמה לוקחים?</span>
           <div class="lxm-qty-row">
-            {% for value in product.options_with_values[1].values %}
+            {% for value in qty_values %}
               <button
                 type="button"
                 class="lxm-qty-card{% if value == current_variant.option2 %} lxm-qty-active{% endif %}"
@@ -413,6 +411,8 @@
   </div>
 </section>
 
+{% render 'luxamom-bundle' %}
+
 <section class="lxm-section" id="features">
   <div class="lxm-wrap">
     <div class="lxm-section-head">
@@ -455,7 +455,7 @@
       <div class="lxm-spec-line"><dt>משקל מרבי</dt><dd>{{ section.settings.max_weight | default: 'עד 20 ק״ג' }}</dd></div>
       <div class="lxm-spec-line"><dt>אופן לבישה</dt><dd>חד-כתפי, רצועה מתכווננת עם אבזם פתיחה מהירה</dd></div>
       <div class="lxm-spec-line"><dt>אוורור</dt><dd>פאנל רשת ברצועת הכתף ובטנת רשת במושב</dd></div>
-      <div class="lxm-spec-line"><dt>גוונים</dt><dd>{% for value in product.options_with_values[color_option_index].values %}{{ value }}{% unless forloop.last %} · {% endunless %}{% endfor %}</dd></div>
+      <div class="lxm-spec-line"><dt>גוונים</dt><dd>{% for value in color_values %}{{ value }}{% unless forloop.last %} · {% endunless %}{% endfor %}</dd></div>
     </dl>
   </div>
 </section>
@@ -489,14 +489,6 @@
         </button>
         <div class="lxm-acc-body"><div class="lxm-acc-body-in">
           <p>כן. הרצועה מתכווננת באורכה והאבזם נפתח בלחיצה, כך שאפשר להעביר את המנשא בין שני הורים תוך שניות.</p>
-        </div></div>
-      </div>
-      <div class="lxm-acc-item">
-        <button type="button" class="lxm-acc-head">איך מכבסים?
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="lxm-acc-body"><div class="lxm-acc-body-in">
-          <p>מומלץ ניקוי נקודתי במים פושרים ובסבון עדין, וייבוש באוויר. יש להימנע ממייבש כביסה ומהלבנה כדי לשמור על הריפוד ועל חוזק התפרים.</p>
         </div></div>
       </div>
       <div class="lxm-acc-item">
