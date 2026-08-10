@@ -1,0 +1,8 @@
+{
+  "sections": {
+    "main": {
+      "type": "luxamom-product-sling"
+    }
+  },
+  "order": ["main"]
+}
