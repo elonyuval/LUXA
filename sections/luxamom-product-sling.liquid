@@ -116,6 +116,8 @@
   position:absolute; top:-10px; inset-inline-end:14px; background:var(--rose); color:#fff;
   font-size:11px; font-weight:700; padding:4px 11px; border-radius:999px;
 }
+.lxm-pdp [hidden]{display:none !important;}
+.lxm-pair-note{margin-top:12px; font-size:12.5px; opacity:.7; line-height:1.6;}
 @media(max-width:420px){.lxm-qty-row{grid-template-columns:1fr;}}
 
 .lxm-cta{margin-top:26px;}
@@ -209,10 +211,18 @@
   # Derived from the variants rather than from options_with_values, whose values
   # are objects — comparing them against variant.option1 would never match.
   assign color_values = product.variants | map: 'option1' | uniq
-  assign qty_values = product.variants | map: 'option2' | uniq
 -%}
 
-<div class="lxm-pdp">
+{%- comment -%}
+  The pair offer is not a variant. A variant is one fixed combination, so a
+  "pair" variant could only ever carry a single colour — and covering every
+  mixed pair would need one variant per combination. Instead the pair is a mode
+  in this picker that adds two single units to the cart, and the automatic
+  "2 for ₪249.99" discount does the pricing. That also keeps every variant a
+  real single unit, which is what the supplier mapping expects.
+{%- endcomment -%}
+
+<div class="lxm-pdp" data-pair-discount="{{ section.settings.pair_discount | default: '89.99' }}">
 
 <section class="lxm-pdp-main">
   <div class="lxm-wrap lxm-pdp-grid">
@@ -282,9 +292,8 @@
         <input type="hidden" name="id" value="{{ current_variant.id }}" data-variant-id-input>
 
         {%- comment -%}
-          The picker is driven by this map rather than by one button per variant:
-          with two options there are 10 variants, and the shopper picks a colour
-          and a quantity independently.
+          The picker is driven by this map rather than by one button per variant,
+          because the same colour list is rendered twice — once per unit.
         {%- endcomment -%}
         <script type="application/json" data-lxm-variants>
           [
@@ -292,7 +301,6 @@
               {
                 "id": {{ variant.id | json }},
                 "color": {{ variant.option1 | json }},
-                "qty": {{ variant.option2 | json }},
                 "price": {{ variant.price | json }},
                 "compare": {{ variant.compare_at_price | default: 0 | json }},
                 "priceStr": {{ variant.price | money_without_trailing_zeros | json }},
@@ -305,7 +313,7 @@
         </script>
 
         <div class="lxm-picker">
-          <span class="lxm-picker-label">צבע: <strong data-selected-color-name>{{ current_variant.option1 }}</strong></span>
+          <span class="lxm-picker-label"><span data-color-label>צבע</span>: <strong data-selected-color-name>{{ current_variant.option1 }}</strong></span>
           <div class="lxm-swatch-row">
             {% for value in color_values %}
               {%- liquid
@@ -332,25 +340,53 @@
         <div class="lxm-picker">
           <span class="lxm-picker-label">כמה לוקחים?</span>
           <div class="lxm-qty-row">
-            {% for value in qty_values %}
-              <button
-                type="button"
-                class="lxm-qty-card{% if value == current_variant.option2 %} lxm-qty-active{% endif %}"
-                data-qty="{{ value | escape }}"
-                aria-pressed="{% if value == current_variant.option2 %}true{% else %}false{% endif %}">
-                {% unless forloop.first %}
-                  <span class="lxm-qty-card-tag">{{ section.settings.pair_tag | default: 'הכי משתלם' }}</span>
-                {% endunless %}
-                <span class="lxm-qty-card-title">{% if forloop.first %}יחידה אחת{% else %}שתי יחידות{% endif %}</span>
-                <span class="lxm-qty-card-price" data-qty-price="{{ value | escape }}"></span>
-                <span class="lxm-qty-card-sub" data-qty-sub="{{ value | escape }}"></span>
-              </button>
-            {% endfor %}
+            <button type="button" class="lxm-qty-card lxm-qty-active" data-qty="1" aria-pressed="true">
+              <span class="lxm-qty-card-title">יחידה אחת</span>
+              <span class="lxm-qty-card-price" data-qty-price="1"></span>
+              <span class="lxm-qty-card-sub" data-qty-sub="1"></span>
+            </button>
+            <button type="button" class="lxm-qty-card" data-qty="2" aria-pressed="false">
+              <span class="lxm-qty-card-tag">{{ section.settings.pair_tag | default: 'הכי משתלם' }}</span>
+              <span class="lxm-qty-card-title">שתי יחידות</span>
+              <span class="lxm-qty-card-price" data-qty-price="2"></span>
+              <span class="lxm-qty-card-sub" data-qty-sub="2"></span>
+            </button>
           </div>
         </div>
 
+        {%- comment -%}
+          Only shown once the pair is chosen: with one unit the colour question
+          is already answered above, and an empty second picker would just be
+          noise.
+        {%- endcomment -%}
+        <div class="lxm-picker" data-second-color hidden>
+          <span class="lxm-picker-label">צבע היחידה השנייה: <strong data-selected-color2-name></strong></span>
+          <div class="lxm-swatch-row">
+            {% for value in color_values %}
+              {%- liquid
+                assign swatch_img = ''
+                for variant in product.variants
+                  if variant.option1 == value and variant.featured_image
+                    assign swatch_img = variant.featured_image | image_url: width: 120
+                    break
+                  endif
+                endfor
+              -%}
+              <button
+                type="button"
+                class="lxm-swatch"
+                data-color2="{{ value | escape }}"
+                aria-pressed="false">
+                <span class="lxm-swatch-dot" style="background-image:url({{ swatch_img }});"></span>
+                <span class="lxm-swatch-name">{{ value }}</span>
+              </button>
+            {% endfor %}
+          </div>
+          <p class="lxm-pair-note">אפשר לבחור שני גוונים שונים או פעמיים את אותו גוון. ההנחה נכנסת אוטומטית בסל.</p>
+        </div>
+
         <div class="lxm-cta">
-          <button type="submit" class="lxm-btn lxm-btn-primary" data-add-btn>הוספה לסל — <span data-price-inline>{{ current_variant.price | money_without_trailing_zeros }}</span></button>
+          <button type="submit" class="lxm-btn lxm-btn-primary" data-add-btn><span data-add-label>הוספה לסל</span> — <span data-price-inline>{{ current_variant.price | money_without_trailing_zeros }}</span></button>
           <p class="lxm-cta-note">משלוח חינם תמיד (5-17 ימי עסק) · 30 יום להחזרה מכל סיבה</p>
           <div class="lxm-secure-row">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
@@ -576,7 +612,9 @@
 
   var mainImgs = root.querySelectorAll('.lxm-gallery-img');
   var thumbs = root.querySelectorAll('.lxm-thumb');
-  var swatches = root.querySelectorAll('.lxm-swatch');
+  // Scoped to [data-color]: the second unit's swatches carry the same class, and
+  // an unscoped selector would fire both handlers on one click.
+  var swatches = root.querySelectorAll('.lxm-swatch[data-color]');
   var qtyCards = root.querySelectorAll('.lxm-qty-card');
   var variantInput = root.querySelector('[data-variant-id-input]');
   var priceNow = root.querySelector('[data-price]');
@@ -586,20 +624,46 @@
   var priceRow = root.querySelector('.lxm-price-row');
   var addBtn = root.querySelector('[data-add-btn]');
 
-  var state = {
-    color: variants[0].color,
-    qty: variants[0].qty
-  };
-  var activeSwatch = root.querySelector('.lxm-swatch.lxm-swatch-active');
-  if (activeSwatch) state.color = activeSwatch.getAttribute('data-color');
-  var activeQty = root.querySelector('.lxm-qty-card.lxm-qty-active');
-  if (activeQty) state.qty = activeQty.getAttribute('data-qty');
+  var secondColorWrap = root.querySelector('[data-second-color]');
+  var swatches2 = root.querySelectorAll('[data-color2]');
+  var colorLabel = root.querySelector('[data-color-label]');
+  var selectedName2El = root.querySelector('[data-selected-color2-name]');
+  var addLabel = root.querySelector('[data-add-label]');
+  var pairDiscount = Math.round(parseFloat(root.getAttribute('data-pair-discount') || '0') * 100);
 
-  function findVariant(color, qty) {
+  var state = { color: variants[0].color, color2: variants[0].color, qty: 1 };
+  var activeSwatch = root.querySelector('.lxm-swatch[data-color].lxm-swatch-active');
+  if (activeSwatch) {
+    state.color = activeSwatch.getAttribute('data-color');
+    state.color2 = state.color;
+  }
+
+  function findVariant(color) {
     for (var i = 0; i < variants.length; i++) {
-      if (variants[i].color === color && variants[i].qty === qty) return variants[i];
+      if (variants[i].color === color) return variants[i];
     }
     return null;
+  }
+
+  function money(cents) {
+    var value = Math.round(cents) / 100;
+    var fraction = Math.round(value * 100) % 100 === 0 ? 0 : 2;
+    return '₪' + value.toLocaleString('he-IL', { minimumFractionDigits: fraction, maximumFractionDigits: 2 });
+  }
+
+  // Two units are priced by the automatic "2 for" discount in the admin rather
+  // than by a variant, so the page derives the pair price from the same amount
+  // the cart will actually take off — change the discount and the page follows.
+  function priceFor(qty) {
+    var v = findVariant(state.color);
+    if (!v) return 0;
+    return qty === 2 ? (v.price * 2) - pairDiscount : v.price;
+  }
+
+  function compareFor(qty) {
+    var v = findVariant(state.color);
+    if (!v || !v.compare) return 0;
+    return qty === 2 ? v.compare * 2 : v.compare;
   }
 
   function showImage(src) {
@@ -616,71 +680,81 @@
     });
   }
 
-  // The two quantity cards always price the currently selected colour, so the
+  // Both quantity cards always price the currently selected colour, so the
   // shopper compares one unit against the pair without switching anything.
   function renderQtyCards() {
     qtyCards.forEach(function (card) {
-      var qty = card.getAttribute('data-qty');
-      var v = findVariant(state.color, qty);
+      var qty = parseInt(card.getAttribute('data-qty'), 10);
       var priceEl = card.querySelector('[data-qty-price]');
       var subEl = card.querySelector('[data-qty-sub]');
-      if (!v) {
-        card.disabled = true;
-        return;
-      }
-      card.disabled = false;
-      if (priceEl) priceEl.textContent = v.priceStr;
+      if (priceEl) priceEl.textContent = money(priceFor(qty));
       if (subEl) {
-        if (v.compare > v.price) {
-          subEl.textContent = 'במקום ' + v.compareStr;
+        if (qty === 2) {
+          subEl.textContent = 'חוסכים ' + money(pairDiscount);
+        } else if (compareFor(1) > priceFor(1)) {
+          subEl.textContent = 'במקום ' + money(compareFor(1));
         } else {
           subEl.textContent = '';
         }
       }
-      card.classList.toggle('lxm-qty-active', qty === state.qty);
-      card.setAttribute('aria-pressed', qty === state.qty ? 'true' : 'false');
+      var isActive = qty === state.qty;
+      card.classList.toggle('lxm-qty-active', isActive);
+      card.setAttribute('aria-pressed', isActive ? 'true' : 'false');
     });
   }
 
   function render() {
-    var v = findVariant(state.color, state.qty);
+    var v = findVariant(state.color);
     if (!v) return;
+    var price = priceFor(state.qty);
+    var compare = compareFor(state.qty);
+    var priceStr = money(price);
 
     if (variantInput) variantInput.value = v.id;
-    if (priceNow) priceNow.textContent = v.priceStr;
-    if (priceInline) priceInline.textContent = v.priceStr;
-    if (stickyPrice) stickyPrice.textContent = v.priceStr;
+    if (priceNow) priceNow.textContent = priceStr;
+    if (priceInline) priceInline.textContent = priceStr;
+    if (stickyPrice) stickyPrice.textContent = priceStr;
     if (selectedNameEl) selectedNameEl.textContent = v.color;
+    if (colorLabel) colorLabel.textContent = state.qty === 2 ? 'צבע היחידה הראשונה' : 'צבע';
+    if (selectedName2El) selectedName2El.textContent = state.color2;
+    if (secondColorWrap) secondColorWrap.hidden = state.qty !== 2;
 
     var wasEl = priceRow.querySelector('[data-compare-price]');
     var offEl = priceRow.querySelector('[data-price-off]');
-    if (v.compare > v.price) {
+    if (compare > price) {
       if (!wasEl) {
         wasEl = document.createElement('span');
         wasEl.className = 'lxm-price-was';
         wasEl.setAttribute('data-compare-price', '');
         priceRow.appendChild(wasEl);
       }
-      wasEl.textContent = v.compareStr;
+      wasEl.textContent = money(compare);
       if (!offEl) {
         offEl = document.createElement('span');
         offEl.className = 'lxm-price-off';
         offEl.setAttribute('data-price-off', '');
         priceRow.appendChild(offEl);
       }
-      offEl.textContent = Math.round((v.compare - v.price) * 100 / v.compare) + '% הנחה';
+      offEl.textContent = Math.round((compare - price) * 100 / compare) + '% הנחה';
     } else {
       if (wasEl) wasEl.remove();
       if (offEl) offEl.remove();
     }
 
-    if (addBtn) {
-      addBtn.disabled = !v.available;
-      if (!v.available) addBtn.textContent = 'אזל מהמלאי';
-    }
+    // The label is a separate element so that going out of stock and back
+    // doesn't destroy the price span living inside the same button.
+    var soldOut = !v.available;
+    if (addBtn) addBtn.disabled = soldOut;
+    if (addLabel) addLabel.textContent = soldOut ? 'אזל מהמלאי' : 'הוספה לסל';
+    if (priceInline) priceInline.style.display = soldOut ? 'none' : '';
 
     swatches.forEach(function (s) {
       var isActive = s.getAttribute('data-color') === state.color;
+      s.classList.toggle('lxm-swatch-active', isActive);
+      s.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+    swatches2.forEach(function (s) {
+      var isActive = s.getAttribute('data-color2') === state.color2;
       s.classList.toggle('lxm-swatch-active', isActive);
       s.setAttribute('aria-pressed', isActive ? 'true' : 'false');
     });
@@ -692,14 +766,23 @@
   swatches.forEach(function (swatch) {
     swatch.addEventListener('click', function () {
       state.color = swatch.getAttribute('data-color');
+      // While a single unit is selected the second colour has no meaning yet,
+      // so it follows along — picking the pair then defaults to a matching set.
+      if (state.qty !== 2) state.color2 = state.color;
+      render();
+    });
+  });
+
+  swatches2.forEach(function (swatch) {
+    swatch.addEventListener('click', function () {
+      state.color2 = swatch.getAttribute('data-color2');
       render();
     });
   });
 
   qtyCards.forEach(function (card) {
     card.addEventListener('click', function () {
-      if (card.disabled) return;
-      state.qty = card.getAttribute('data-qty');
+      state.qty = parseInt(card.getAttribute('data-qty'), 10);
       render();
     });
   });
@@ -715,21 +798,39 @@
     });
   });
 
-  // add-to-cart via drawer (falls back to a normal form submit if the drawer
-  // script isn't ready)
+  // A pair can be two different colours, which is two cart lines — more than a
+  // single variant id can express, so the add goes through the cart API. If
+  // scripting fails entirely the form still posts natively and adds one unit.
+  function addToCart() {
+    var v1 = findVariant(state.color);
+    if (!v1) return Promise.resolve();
+    var items = [{ id: v1.id, quantity: 1 }];
+    if (state.qty === 2) {
+      var v2 = findVariant(state.color2);
+      if (!v2 || v2.id === v1.id) items[0].quantity = 2;
+      else items.push({ id: v2.id, quantity: 1 });
+    }
+    return fetch('/cart/add.js', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: items })
+    }).then(function (r) {
+      return r.json();
+    }).then(function () {
+      if (window.LXMCart && window.LXMCart.open) window.LXMCart.open();
+      else window.location.href = '/cart';
+    });
+  }
+
   var pdpForm = root.querySelector('.lxm-pdp-form');
   if (pdpForm) {
     pdpForm.addEventListener('submit', function (e) {
-      if (!window.LXMCart) return;
       e.preventDefault();
-      var vid = variantInput ? variantInput.value : null;
-      if (!vid) return;
       if (addBtn) addBtn.disabled = true;
-      window.LXMCart.addItem(vid, 1).then(function () {
+      addToCart().then(function () {
         if (addBtn) addBtn.disabled = false;
       }).catch(function () {
         if (addBtn) addBtn.disabled = false;
-        pdpForm.submit();
       });
     });
   }
@@ -783,6 +884,7 @@
     { "type": "checkbox", "id": "show_stock_note", "label": "Show limited-stock note", "default": true },
     { "type": "text", "id": "stock_note", "label": "Limited-stock note", "default": "מלאי מוגבל — נותרו יחידות אחרונות מהמשלוח הנוכחי" },
     { "type": "text", "id": "pair_tag", "label": "Pair offer tag", "default": "הכי משתלם" },
+    { "type": "text", "id": "pair_discount", "label": "Pair discount (₪)", "info": "Must match the automatic \"2 for\" discount in Discounts", "default": "89.99" },
     { "type": "text", "id": "features_heading", "label": "Features heading", "default": "התינוק צמוד, היד שלך פנויה" }
   ],
   "presets": [{ "name": "LUXAMOM product — sling" }]
