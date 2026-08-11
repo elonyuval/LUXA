@@ -9,6 +9,12 @@
 
   The matching cart discounts are automatic discounts in the admin:
   2 items → 10%, 3 items → 15%, 4 items → 20%.
+
+  Optional parameters:
+    heading   — overrides the section title.
+    preselect — number of cards ticked on load. On a product page the current
+                product is always ticked and locked, so this is for the
+                home page, where nothing is implied by context.
 {%- endcomment -%}
 
 {%- liquid
@@ -30,6 +36,10 @@
   if be_sling != blank
     assign be_count = be_count | plus: 1
   endif
+
+  assign be_heading = heading | default: 'קני ביחד וחסכי'
+  assign be_preselect = preselect | default: 0
+  assign be_rendered = 0
 -%}
 
 {%- if be_count > 1 -%}
@@ -90,7 +100,7 @@
 <section class="lxm-be">
   <div class="lxm-be-wrap">
     <p class="lxm-be-eyebrow">חסכו ביחד</p>
-    <h2 class="lxm-be-title">קני ביחד וחסכי</h2>
+    <h2 class="lxm-be-title">{{ be_heading }}</h2>
     <p class="lxm-be-sub">כל מוצר שמתווסף מוריד את המחיר. ההנחה נכנסת אוטומטית בסל — בלי קוד.</p>
 
     <div class="lxm-be-card" data-be>
@@ -104,19 +114,27 @@
           {%- endcase -%}
           {%- if bep == blank -%}{%- continue -%}{%- endif -%}
           {%- liquid
+            assign be_rendered = be_rendered | plus: 1
             assign be_cur = false
             if product != blank and product.id == bep.id
               assign be_cur = true
             endif
+            assign be_on = be_cur
+            unless be_cur
+              if be_rendered <= be_preselect
+                assign be_on = true
+              endif
+            endunless
             # Products sold both singly and as a pair expose the quantity as a
             # second option; only the single unit belongs in a mix-and-match bundle.
             assign be_single_qty = bep.variants | map: 'option2' | uniq | first
           -%}
           <div
-            class="lxm-be-pick{% if be_cur %} lxm-be-on lxm-be-lock{% endif %}"
+            class="lxm-be-pick{% if be_on %} lxm-be-on{% endif %}{% if be_cur %} lxm-be-lock{% endif %}"
             data-be-pick
             data-be-price="{{ bep.price }}"
-            {% if be_cur %}data-be-on="1" data-be-lock="1"{% else %}role="button" tabindex="0" aria-pressed="false"{% endif %}
+            {% if be_on %}data-be-on="1"{% endif %}
+            {% if be_cur %}data-be-lock="1"{% else %}role="button" tabindex="0" aria-pressed="{% if be_on %}true{% else %}false{% endif %}"{% endif %}
           >
             <span class="lxm-be-tick" aria-hidden="true">✓</span>
             {%- if be_cur -%}<span class="lxm-be-flag">המוצר שלך</span>{%- endif -%}
