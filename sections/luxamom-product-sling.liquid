@@ -78,14 +78,21 @@
 .lxm-spec-pill{display:flex; align-items:center; gap:7px; background:var(--white); border:1px solid rgba(139,112,96,.18); border-radius:999px; padding:8px 15px; font-size:13.5px; font-weight:600; color:var(--taupe-dark);}
 .lxm-spec-pill svg{width:16px;height:16px; stroke:var(--rose-dark); flex:none;}
 
-/* limited stock strip */
+/* scarcity strip — deliberately the one red thing on an otherwise soft page */
 .lxm-stock{
-  display:flex; align-items:center; gap:10px; margin-top:20px;
-  background:var(--rose-soft); border-radius:14px; padding:12px 16px;
-  font-size:14px; font-weight:600; color:var(--rose-dark);
+  display:flex; align-items:center; gap:11px; margin-top:20px;
+  background:#FDECEC; border:1px solid #F3C6C6; border-radius:14px; padding:12px 16px;
+  font-size:14.5px; font-weight:700; color:#C0392B;
 }
-.lxm-stock-dot{width:9px;height:9px;border-radius:50%;background:var(--rose-dark); flex:none; animation:lxm-pulse 1.6s ease-in-out infinite;}
-@keyframes lxm-pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.35;transform:scale(.8);}}
+.lxm-stock-dot{
+  width:10px; height:10px; border-radius:50%; background:#E74C3C; flex:none;
+  animation:lxm-glow 1.7s ease-out infinite;
+}
+@keyframes lxm-glow{
+  0%{box-shadow:0 0 0 0 rgba(231,76,60,.65);}
+  70%{box-shadow:0 0 0 11px rgba(231,76,60,0);}
+  100%{box-shadow:0 0 0 0 rgba(231,76,60,0);}
+}
 @media (prefers-reduced-motion: reduce){.lxm-stock-dot{animation:none;}}
 
 .lxm-picker{margin-top:28px;}
@@ -222,7 +229,15 @@
   real single unit, which is what the supplier mapping expects.
 {%- endcomment -%}
 
-<div class="lxm-pdp" data-pair-discount="{{ section.settings.pair_discount | default: '89.99' }}">
+<div
+  class="lxm-pdp"
+  data-pair-discount="{{ section.settings.pair_discount | default: '89.99' }}"
+  data-cta-single="{{ section.settings.cta_single | default: 'אני רוצה אחד' | escape }}"
+  data-cta-pair="{{ section.settings.cta_pair | default: 'אני רוצה שניים' | escape }}"
+  data-stock-count-text="{{ section.settings.stock_count_text | default: 'נשארו רק {count} יחידות' | escape }}"
+  data-stock-note="{{ section.settings.stock_note | default: 'כמות מוגבלת מהמשלוח הנוכחי' | escape }}"
+  data-stock-threshold="{{ section.settings.low_stock_threshold | default: 20 }}"
+>
 
 <section class="lxm-pdp-main">
   <div class="lxm-wrap lxm-pdp-grid">
@@ -281,10 +296,16 @@
         </span>
       </div>
 
+      {%- comment -%}
+        Filled by the script per selected colour. When inventory is tracked it
+        shows the real remaining count for that colour and hides itself once the
+        count is above the threshold; with tracking off it falls back to the
+        wording in the section settings, which carries no number.
+      {%- endcomment -%}
       {% if section.settings.show_stock_note %}
-        <div class="lxm-stock">
+        <div class="lxm-stock" data-stock hidden>
           <span class="lxm-stock-dot"></span>
-          {{ section.settings.stock_note | default: 'מלאי מוגבל — נותרו יחידות אחרונות מהמשלוח הנוכחי' }}
+          <span data-stock-text></span>
         </div>
       {% endif %}
 
@@ -306,6 +327,8 @@
                 "priceStr": {{ variant.price | money_without_trailing_zeros | json }},
                 "compareStr": {{ variant.compare_at_price | money_without_trailing_zeros | json }},
                 "available": {{ variant.available | json }},
+                "tracked": {% if variant.inventory_management != blank %}true{% else %}false{% endif %},
+                "inv": {{ variant.inventory_quantity | json }},
                 "img": {% if variant.featured_image %}{{ variant.featured_image | image_url: width: 1200 | json }}{% else %}null{% endif %}
               }{%- unless forloop.last -%},{%- endunless -%}
             {%- endfor -%}
@@ -386,7 +409,7 @@
         </div>
 
         <div class="lxm-cta">
-          <button type="submit" class="lxm-btn lxm-btn-primary" data-add-btn><span data-add-label>הוספה לסל</span> — <span data-price-inline>{{ current_variant.price | money_without_trailing_zeros }}</span></button>
+          <button type="submit" class="lxm-btn lxm-btn-primary" data-add-btn><span data-add-label>{{ section.settings.cta_single | default: 'אני רוצה אחד' }}</span> — <span data-price-inline>{{ current_variant.price | money_without_trailing_zeros }}</span></button>
           <p class="lxm-cta-note">משלוח חינם תמיד (5-17 ימי עסק) · 30 יום להחזרה מכל סיבה</p>
           <div class="lxm-secure-row">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
@@ -594,7 +617,7 @@
 
 <div class="lxm-sticky-bar" data-sticky-bar>
   <span class="lxm-sticky-bar-price" data-sticky-price>{{ current_variant.price | money_without_trailing_zeros }}</span>
-  <button type="button" class="lxm-btn lxm-btn-primary" data-sticky-cta>הוספה לסל</button>
+  <button type="button" class="lxm-btn lxm-btn-primary" data-sticky-cta>{{ section.settings.cta_single | default: 'אני רוצה אחד' }}</button>
 </div>
 
 </div>
@@ -629,7 +652,15 @@
   var colorLabel = root.querySelector('[data-color-label]');
   var selectedName2El = root.querySelector('[data-selected-color2-name]');
   var addLabel = root.querySelector('[data-add-label]');
+  var stickyCta = root.querySelector('[data-sticky-cta]');
+  var stockWrap = root.querySelector('[data-stock]');
+  var stockText = root.querySelector('[data-stock-text]');
   var pairDiscount = Math.round(parseFloat(root.getAttribute('data-pair-discount') || '0') * 100);
+  var ctaSingle = root.getAttribute('data-cta-single') || 'אני רוצה אחד';
+  var ctaPair = root.getAttribute('data-cta-pair') || 'אני רוצה שניים';
+  var stockCountText = root.getAttribute('data-stock-count-text') || 'נשארו רק {count} יחידות';
+  var stockNote = root.getAttribute('data-stock-note') || '';
+  var stockThreshold = parseInt(root.getAttribute('data-stock-threshold'), 10) || 0;
 
   var state = { color: variants[0].color, color2: variants[0].color, qty: 1 };
   var activeSwatch = root.querySelector('.lxm-swatch[data-color].lxm-swatch-active');
@@ -678,6 +709,29 @@
     thumbs.forEach(function (t, i) {
       t.classList.toggle('lxm-thumb-active', mainImgs[i] && mainImgs[i].classList.contains('lxm-active'));
     });
+  }
+
+  // The count is per colour, and it is only ever the real one: with inventory
+  // tracking on it reads the remaining units for the selected colour and stays
+  // hidden above the threshold; with tracking off it falls back to wording that
+  // makes no numeric claim, so the page never invents a number.
+  function renderStock(v) {
+    if (!stockWrap || !stockText) return;
+    if (v.tracked && v.inv > 0) {
+      if (stockThreshold && v.inv > stockThreshold) {
+        stockWrap.hidden = true;
+        return;
+      }
+      stockText.textContent = stockCountText.replace('{count}', v.inv);
+      stockWrap.hidden = false;
+      return;
+    }
+    if (!v.tracked && stockNote) {
+      stockText.textContent = stockNote;
+      stockWrap.hidden = false;
+      return;
+    }
+    stockWrap.hidden = true;
   }
 
   // Both quantity cards always price the currently selected colour, so the
@@ -744,9 +798,13 @@
     // The label is a separate element so that going out of stock and back
     // doesn't destroy the price span living inside the same button.
     var soldOut = !v.available;
+    var cta = state.qty === 2 ? ctaPair : ctaSingle;
     if (addBtn) addBtn.disabled = soldOut;
-    if (addLabel) addLabel.textContent = soldOut ? 'אזל מהמלאי' : 'הוספה לסל';
+    if (addLabel) addLabel.textContent = soldOut ? 'אזל מהמלאי' : cta;
+    if (stickyCta) stickyCta.textContent = soldOut ? 'אזל מהמלאי' : cta;
     if (priceInline) priceInline.style.display = soldOut ? 'none' : '';
+
+    renderStock(v);
 
     swatches.forEach(function (s) {
       var isActive = s.getAttribute('data-color') === state.color;
@@ -881,8 +939,12 @@
     { "type": "textarea", "id": "short_desc", "label": "Short description under the price", "default": "מנשא סלינג לכתף אחת שמחזיק את התינוק צמוד אלייך — משחרר לך יד אחת ומוריד את העומס מהגב ומהזרועות." },
     { "type": "text", "id": "age_range", "label": "Age range", "default": "3–36 חודשים" },
     { "type": "text", "id": "max_weight", "label": "Max weight", "default": "עד 20 ק״ג" },
-    { "type": "checkbox", "id": "show_stock_note", "label": "Show limited-stock note", "default": true },
-    { "type": "text", "id": "stock_note", "label": "Limited-stock note", "default": "מלאי מוגבל — נותרו יחידות אחרונות מהמשלוח הנוכחי" },
+    { "type": "checkbox", "id": "show_stock_note", "label": "Show scarcity strip", "default": true },
+    { "type": "text", "id": "stock_count_text", "label": "Scarcity text with a real count", "info": "{count} is replaced by the remaining units of the selected colour. Only shown when inventory tracking is on.", "default": "נשארו רק {count} יחידות" },
+    { "type": "range", "id": "low_stock_threshold", "label": "Show the count only below", "min": 3, "max": 50, "step": 1, "unit": "יח", "default": 20 },
+    { "type": "text", "id": "stock_note", "label": "Fallback text (inventory not tracked)", "info": "Used when there is no real count to show — keep it free of numbers", "default": "כמות מוגבלת מהמשלוח הנוכחי" },
+    { "type": "text", "id": "cta_single", "label": "Button — one unit", "default": "אני רוצה אחד" },
+    { "type": "text", "id": "cta_pair", "label": "Button — two units", "default": "אני רוצה שניים" },
     { "type": "text", "id": "pair_tag", "label": "Pair offer tag", "default": "הכי משתלם" },
     { "type": "text", "id": "pair_discount", "label": "Pair discount (₪)", "info": "Must match the automatic \"2 for\" discount in Discounts", "default": "89.99" },
     { "type": "text", "id": "features_heading", "label": "Features heading", "default": "התינוק צמוד, היד שלך פנויה" }
