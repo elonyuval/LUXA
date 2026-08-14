@@ -1,0 +1,931 @@
+{%- comment -%}
+  LUXAMOM product page — מנשא חיבוק (baby sling carrier).
+
+  Built on the same design language as luxamom-product-warmer, with one
+  structural difference: this product has two options (צבע + כמות) instead of
+  one, so the picker resolves a variant from both axes through a variant map
+  rendered into JSON, rather than one swatch per variant.
+{%- endcomment -%}
+
+<style>
+@font-face{font-family:'Frank Ruhl';font-weight:400;font-style:normal;font-display:swap;src:url({{ 'frl-400-he.woff2' | asset_url }}) format('woff2');unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}
+@font-face{font-family:'Frank Ruhl';font-weight:400;font-style:normal;font-display:swap;src:url({{ 'frl-400-lat.woff2' | asset_url }}) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+2000-206F,U+2122;}
+@font-face{font-family:'Frank Ruhl';font-weight:700;font-style:normal;font-display:swap;src:url({{ 'frl-700-he.woff2' | asset_url }}) format('woff2');unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}
+@font-face{font-family:'Frank Ruhl';font-weight:700;font-style:normal;font-display:swap;src:url({{ 'frl-700-lat.woff2' | asset_url }}) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+2000-206F,U+2122;}
+@font-face{font-family:'Assistant';font-weight:400;font-style:normal;font-display:swap;src:url({{ 'assist-400-he.woff2' | asset_url }}) format('woff2');unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}
+@font-face{font-family:'Assistant';font-weight:400;font-style:normal;font-display:swap;src:url({{ 'assist-400-lat.woff2' | asset_url }}) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+2000-206F,U+2122;}
+@font-face{font-family:'Assistant';font-weight:600;font-style:normal;font-display:swap;src:url({{ 'assist-600-he.woff2' | asset_url }}) format('woff2');unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}
+@font-face{font-family:'Assistant';font-weight:600;font-style:normal;font-display:swap;src:url({{ 'assist-600-lat.woff2' | asset_url }}) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+2000-206F,U+2122;}
+
+:root{
+  --cream:#FAF6F1;
+  --cream-2:#F3ECE3;
+  --taupe:#8B7060;
+  --taupe-dark:#6b5646;
+  --rose:#D9989A;
+  --rose-dark:#c17b7e;
+  --rose-soft:#f1dcdb;
+  --sage:#A8B8A0;
+  --ink:#3a2f28;
+  --white:#FBF8F4;
+  --shadow: 0 14px 36px rgba(107,86,70,0.10);
+}
+*{box-sizing:border-box;}
+.lxm-pdp h1,.lxm-pdp h2,.lxm-pdp h3{font-family:'Frank Ruhl',serif; font-weight:700; margin:0;}
+.lxm-pdp{background:var(--cream); color:var(--ink); font-family:'Assistant',sans-serif; direction:rtl; overflow-x:hidden; line-height:1.6;}
+.lxm-pdp p{margin:0;}
+.lxm-pdp a{text-decoration:none;color:inherit;}
+.lxm-pdp img{max-width:100%;display:block;}
+.lxm-pdp button{font-family:'Assistant',sans-serif;}
+.lxm-wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
+.lxm-pdp .lxm-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:17px 34px;border-radius:999px;font-weight:700;font-size:16.5px;cursor:pointer;
+  border:1.5px solid transparent; transition:transform .25s ease, box-shadow .25s ease, background .25s ease;
+  white-space:nowrap; width:100%;
+}
+.lxm-pdp .lxm-btn-primary{background:var(--taupe);color:var(--white);}
+.lxm-pdp .lxm-btn-primary:hover{background:var(--taupe-dark); transform:translateY(-2px); box-shadow:var(--shadow);}
+.lxm-pdp .lxm-btn-primary:disabled{opacity:.55; cursor:not-allowed; transform:none;}
+.lxm-pdp .lxm-eyebrow{
+  font-size:13px; letter-spacing:.14em; font-weight:600; color:var(--rose-dark);
+  text-transform:uppercase; display:flex; align-items:center; gap:10px;
+}
+
+/* main gallery + info layout */
+.lxm-pdp-main{padding:52px 0 20px;}
+.lxm-pdp-grid{display:grid; grid-template-columns:1.05fr .95fr; gap:64px; align-items:flex-start;}
+.lxm-gallery-main{aspect-ratio:1/1; border-radius:26px; overflow:hidden; background:var(--cream-2); box-shadow:var(--shadow); position:relative;}
+.lxm-gallery-main img{width:100%;height:100%;object-fit:cover; position:absolute; inset:0; opacity:0; transition:opacity .35s ease;}
+.lxm-gallery-main img.lxm-active{opacity:1;}
+.lxm-gallery-badge{position:absolute; top:18px; inset-inline-start:18px; background:var(--rose); color:#fff; font-size:12px; font-weight:700; padding:7px 15px; border-radius:999px; z-index:2;}
+.lxm-thumbs{display:flex; gap:12px; margin-top:16px; overflow-x:auto; padding-bottom:4px;}
+.lxm-thumbs img{width:84px; height:84px; object-fit:cover; border-radius:14px; cursor:pointer; border:2px solid transparent; opacity:.65; transition:opacity .2s ease, border-color .2s ease; flex:none;}
+.lxm-thumbs img:hover{opacity:1;}
+.lxm-thumbs img.lxm-thumb-active{opacity:1; border-color:var(--taupe);}
+
+.lxm-pdp-info{position:sticky; top:24px;}
+.lxm-pdp-info .lxm-eyebrow{justify-content:flex-start;}
+.lxm-pdp-info h1{font-size:clamp(28px,3vw,38px); margin-top:14px; color:#4a3b30; line-height:1.25;}
+.lxm-price-row{display:flex; align-items:baseline; gap:14px; margin-top:20px; flex-wrap:wrap;}
+.lxm-price-now{font-family:'Frank Ruhl',serif; font-size:32px; font-weight:700; color:var(--taupe-dark); direction:ltr; unicode-bidi:isolate;}
+.lxm-price-was{font-size:19px; color:rgba(58,47,40,.45); text-decoration:line-through; direction:ltr; unicode-bidi:isolate;}
+.lxm-price-off{background:var(--rose-soft); color:var(--rose-dark); font-size:13px; font-weight:700; padding:5px 12px; border-radius:999px;}
+.lxm-pdp-desc{margin-top:18px; font-size:16.5px; opacity:.85; max-width:480px;}
+
+/* age + weight spec pills */
+.lxm-spec-row{display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;}
+.lxm-spec-pill{display:flex; align-items:center; gap:7px; background:var(--white); border:1px solid rgba(139,112,96,.18); border-radius:999px; padding:8px 15px; font-size:13.5px; font-weight:600; color:var(--taupe-dark);}
+.lxm-spec-pill svg{width:16px;height:16px; stroke:var(--rose-dark); flex:none;}
+
+/* scarcity strip — deliberately the one red thing on an otherwise soft page */
+.lxm-stock{
+  display:flex; align-items:center; gap:11px; margin-top:20px;
+  background:#FDECEC; border:1px solid #F3C6C6; border-radius:14px; padding:12px 16px;
+  font-size:14.5px; font-weight:700; color:#C0392B;
+}
+.lxm-stock-dot{
+  width:10px; height:10px; border-radius:50%; background:#E74C3C; flex:none;
+  animation:lxm-glow 1.7s ease-out infinite;
+}
+@keyframes lxm-glow{
+  0%{box-shadow:0 0 0 0 rgba(231,76,60,.65);}
+  70%{box-shadow:0 0 0 11px rgba(231,76,60,0);}
+  100%{box-shadow:0 0 0 0 rgba(231,76,60,0);}
+}
+@media (prefers-reduced-motion: reduce){.lxm-stock-dot{animation:none;}}
+
+.lxm-picker{margin-top:28px;}
+.lxm-picker-label{font-size:14px; font-weight:600; color:var(--taupe-dark); margin-bottom:10px; display:block;}
+.lxm-swatch-row{display:flex; gap:12px; flex-wrap:wrap;}
+.lxm-swatch{display:flex; flex-direction:column; align-items:center; gap:7px; cursor:pointer; background:none; border:none; padding:0; width:64px;}
+.lxm-swatch-dot{
+  width:44px; height:44px; border-radius:50%; border:2px solid transparent;
+  box-shadow:0 0 0 1px rgba(58,47,40,.12); transition:border-color .2s ease, transform .2s ease;
+  background-size:cover; background-position:center;
+}
+.lxm-swatch.lxm-swatch-active .lxm-swatch-dot{border-color:var(--taupe-dark); transform:scale(1.08);}
+.lxm-swatch .lxm-swatch-name{font-size:11.5px; color:var(--ink); opacity:.75; text-align:center; line-height:1.3;}
+
+/* quantity cards — the pair offer lives here */
+.lxm-qty-row{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+.lxm-qty-card{
+  position:relative; text-align:start; cursor:pointer; background:var(--white);
+  border:1.5px solid rgba(139,112,96,.22); border-radius:18px; padding:16px 18px;
+  transition:border-color .2s ease, box-shadow .2s ease;
+}
+.lxm-qty-card:hover{border-color:var(--taupe);}
+.lxm-qty-card.lxm-qty-active{border-color:var(--taupe-dark); box-shadow:var(--shadow);}
+.lxm-qty-card-title{font-size:15px; font-weight:700; color:var(--taupe-dark);}
+.lxm-qty-card-price{font-family:'Frank Ruhl',serif; font-size:20px; font-weight:700; margin-top:4px; color:var(--ink); direction:ltr; unicode-bidi:isolate;}
+.lxm-qty-card-sub{font-size:12.5px; opacity:.7; margin-top:2px;}
+.lxm-qty-card-tag{
+  position:absolute; top:-10px; inset-inline-end:14px; background:var(--rose); color:#fff;
+  font-size:11px; font-weight:700; padding:4px 11px; border-radius:999px;
+}
+.lxm-pdp [hidden]{display:none !important;}
+.lxm-pair-note{margin-top:12px; font-size:12.5px; opacity:.7; line-height:1.6;}
+@media(max-width:420px){.lxm-qty-row{grid-template-columns:1fr;}}
+
+.lxm-cta{margin-top:26px;}
+.lxm-cta-note{margin-top:12px; font-size:13px; text-align:center; opacity:.6;}
+.lxm-secure-row{display:flex; align-items:center; justify-content:center; gap:8px; margin-top:16px; font-size:13px; color:var(--taupe-dark); opacity:.8;}
+.lxm-secure-row svg{width:16px; height:16px; flex:none;}
+
+.lxm-trust-mini{display:flex; gap:22px; margin-top:26px; flex-wrap:wrap;}
+.lxm-trust-mini-item{display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; color:var(--taupe-dark);}
+.lxm-trust-mini-item svg{width:20px;height:20px;stroke:var(--rose-dark); flex:none;}
+
+.lxm-accordion{margin-top:34px; border-top:1px solid rgba(139,112,96,.18);}
+.lxm-acc-item{border-bottom:1px solid rgba(139,112,96,.18);}
+.lxm-acc-head{width:100%; background:none; border:none; display:flex; justify-content:space-between; align-items:center; padding:18px 2px; cursor:pointer; font-size:16px; font-weight:700; color:var(--taupe-dark); text-align:right;}
+.lxm-acc-head svg{width:16px;height:16px; transition:transform .25s ease; flex:none;}
+.lxm-acc-item.lxm-acc-open .lxm-acc-head svg{transform:rotate(180deg);}
+.lxm-acc-body{max-height:0; overflow:hidden; transition:max-height .3s ease;}
+.lxm-acc-item.lxm-acc-open .lxm-acc-body{max-height:600px;}
+.lxm-acc-body-in{padding:0 2px 20px; font-size:15px; opacity:.82; line-height:1.75;}
+.lxm-acc-body-in ul{margin:0; padding-inline-start:20px; display:flex; flex-direction:column; gap:8px;}
+
+.lxm-safety{
+  margin-top:24px; background:var(--rose-soft); border-radius:18px; padding:20px 22px; display:flex; gap:14px; align-items:flex-start;
+}
+.lxm-safety svg{width:22px;height:22px; flex:none; color:var(--rose-dark); margin-top:2px;}
+.lxm-safety p{font-size:14px; line-height:1.7; color:var(--taupe-dark);}
+
+@media(max-width:900px){
+  .lxm-pdp-grid{grid-template-columns:1fr; gap:34px;}
+  .lxm-pdp-info{position:static;}
+}
+
+/* features */
+.lxm-section{padding:90px 0;}
+.lxm-section-head{text-align:center; max-width:640px; margin:0 auto 50px;}
+.lxm-section-head h2{font-size:clamp(26px,3.6vw,36px); margin-top:14px; color:var(--taupe-dark);}
+.lxm-feat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:24px;}
+.lxm-feat-card{background:var(--white); border-radius:20px; padding:28px 22px; box-shadow:var(--shadow); border:1px solid rgba(139,112,96,.08);}
+.lxm-feat-card .lxm-feat-icon{width:44px;height:44px; border-radius:50%; background:var(--rose-soft); color:var(--rose-dark); display:flex; align-items:center; justify-content:center; margin-bottom:16px;}
+.lxm-feat-card .lxm-feat-icon svg{width:20px;height:20px;}
+.lxm-feat-card h3{font-size:17px; color:var(--taupe-dark);}
+.lxm-feat-card p{font-size:14px; opacity:.78; margin-top:8px; line-height:1.65;}
+@media(max-width:900px){.lxm-feat-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:560px){.lxm-feat-grid{grid-template-columns:1fr;}}
+
+/* spec table */
+.lxm-spec-table{max-width:640px; margin:0 auto; background:var(--white); border-radius:22px; padding:12px 28px; box-shadow:var(--shadow); border:1px solid rgba(139,112,96,.1);}
+.lxm-spec-line{display:flex; justify-content:space-between; gap:18px; padding:16px 0; border-bottom:1px solid rgba(139,112,96,.14); font-size:15.5px;}
+.lxm-spec-line:last-child{border-bottom:none;}
+.lxm-spec-line dt{font-weight:700; color:var(--taupe-dark); margin:0;}
+.lxm-spec-line dd{margin:0; opacity:.82; text-align:end;}
+
+.lxm-review-form-wrap{max-width:560px;margin:28px auto 0;background:var(--white);border-radius:24px;padding:40px;box-shadow:var(--shadow);border:1px solid rgba(139,112,96,.1);}
+.lxm-review-form-title{font-family:'Frank Ruhl',serif;font-size:20px;color:var(--taupe-dark);text-align:center;}
+.lxm-star-rating{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:22px;}
+.lxm-star-rating-label{font-size:14px;font-weight:600;color:var(--taupe-dark);}
+.lxm-stars{display:flex;flex-direction:row-reverse;gap:4px;}
+.lxm-stars input{position:absolute;opacity:0;width:0;height:0;}
+.lxm-stars label{font-size:28px;color:rgba(139,112,96,.25);cursor:pointer;line-height:1;transition:color .15s ease;}
+.lxm-stars input:checked ~ label{color:var(--rose);}
+.lxm-stars label:hover, .lxm-stars label:hover ~ label{color:var(--rose-dark);}
+.lxm-review-fields{display:flex;flex-direction:column;gap:12px;margin-top:20px;}
+.lxm-review-fields input,.lxm-review-fields textarea{
+  padding:14px 18px;border-radius:16px;border:1.5px solid rgba(139,112,96,.22);
+  background:var(--cream); color:var(--ink); font-family:'Assistant',sans-serif; font-size:15px; resize:vertical;
+}
+.lxm-review-fields input::placeholder,.lxm-review-fields textarea::placeholder{color:rgba(58,47,40,.45);}
+.lxm-review-form-wrap .lxm-btn{margin-top:18px;}
+.lxm-review-form-note{margin-top:12px;font-size:12.5px;text-align:center;opacity:.55;}
+.lxm-review-thanks{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;padding:20px 0;}
+.lxm-review-thanks svg{width:40px;height:40px;color:var(--rose-dark);}
+.lxm-review-thanks p{font-size:16px;color:var(--taupe-dark);font-weight:600;}
+@media(max-width:600px){.lxm-review-form-wrap{padding:28px 22px;}}
+
+.lxm-faq-list{max-width:760px;margin:0 auto;}
+.lxm-faq-list .lxm-acc-head{font-size:17px;}
+
+.lxm-sticky-bar{
+  position:fixed; bottom:0; inset-inline:0; background:var(--white); box-shadow:0 -8px 24px rgba(0,0,0,.12);
+  padding:14px 20px; display:none; align-items:center; justify-content:space-between; gap:16px; z-index:60;
+  transform:translateY(100%); transition:transform .3s ease;
+}
+.lxm-sticky-bar.lxm-sticky-visible{transform:translateY(0);}
+.lxm-sticky-bar-price{font-family:'Frank Ruhl',serif; font-weight:700; font-size:20px; color:var(--taupe-dark); direction:ltr; unicode-bidi:isolate;}
+.lxm-sticky-bar button{width:auto; padding:13px 30px; font-size:15px;}
+@media(max-width:900px){.lxm-sticky-bar{display:flex;}}
+</style>
+
+{%- liquid
+  assign current_variant = product.selected_or_first_available_variant
+  # Derived from the variants rather than from options_with_values, whose values
+  # are objects — comparing them against variant.option1 would never match.
+  assign color_values = product.variants | map: 'option1' | uniq
+-%}
+
+{%- comment -%}
+  The pair offer is not a variant. A variant is one fixed combination, so a
+  "pair" variant could only ever carry a single colour — and covering every
+  mixed pair would need one variant per combination. Instead the pair is a mode
+  in this picker that adds two single units to the cart, and the automatic
+  "2 for ₪249.99" discount does the pricing. That also keeps every variant a
+  real single unit, which is what the supplier mapping expects.
+{%- endcomment -%}
+
+<div class="lxm-pdp" data-pair-discount="89.99">
+
+<section class="lxm-pdp-main">
+  <div class="lxm-wrap lxm-pdp-grid">
+
+    <div class="lxm-gallery">
+      <div class="lxm-gallery-main">
+        {% if section.settings.badge_text != blank %}
+          <span class="lxm-gallery-badge">{{ section.settings.badge_text }}</span>
+        {% endif %}
+        {% for image in product.images %}
+          <img
+            src="{{ image | image_url: width: 1200 }}"
+            alt="{{ image.alt | escape }}"
+            class="lxm-gallery-img{% if forloop.first %} lxm-active{% endif %}"
+            data-gallery-index="{{ forloop.index0 }}"
+            data-media-src="{{ image | image_url: width: 1200 }}"
+            loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
+        {% endfor %}
+      </div>
+      <div class="lxm-thumbs">
+        {% for image in product.images %}
+          <img
+            src="{{ image | image_url: width: 160 }}"
+            alt="{{ image.alt | escape }}"
+            class="lxm-thumb{% if forloop.first %} lxm-thumb-active{% endif %}"
+            data-thumb-index="{{ forloop.index0 }}"
+            loading="lazy">
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="lxm-pdp-info">
+      <p class="lxm-eyebrow">LUXAMOM</p>
+      <h1>{{ product.title }}</h1>
+
+      <div class="lxm-price-row">
+        <span class="lxm-price-now" data-price>{{ current_variant.price | money_without_trailing_zeros }}</span>
+        {% if current_variant.compare_at_price > current_variant.price %}
+          <span class="lxm-price-was" data-compare-price>{{ current_variant.compare_at_price | money_without_trailing_zeros }}</span>
+          <span class="lxm-price-off" data-price-off>
+            {{ current_variant.compare_at_price | minus: current_variant.price | times: 100.0 | divided_by: current_variant.compare_at_price | round }}% הנחה
+          </span>
+        {% endif %}
+      </div>
+
+      <p class="lxm-pdp-desc">{{ section.settings.short_desc | default: 'מנשא סלינג לכתף אחת שמחזיק את התינוק צמוד אלייך — משחרר לך יד אחת ומוריד את העומס מהגב ומהזרועות.' }}</p>
+
+      <div class="lxm-spec-row">
+        <span class="lxm-spec-pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          {{ section.settings.age_range | default: '3–36 חודשים' }}
+        </span>
+        <span class="lxm-spec-pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l2 12H4z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>
+          {{ section.settings.max_weight | default: 'עד 20 ק״ג' }}
+        </span>
+      </div>
+
+      {%- comment -%}
+        Filled by the script per selected colour. When inventory is tracked it
+        shows the real remaining count for that colour and hides itself once the
+        count is above the threshold; with tracking off it falls back to the
+        wording in the section settings, which carries no number.
+      {%- endcomment -%}
+      {% if section.settings.show_stock_note %}
+        <div class="lxm-stock" data-stock hidden>
+          <span class="lxm-stock-dot"></span>
+          <span data-stock-text></span>
+        </div>
+      {% endif %}
+
+      {% form 'product', product, class: 'lxm-pdp-form' %}
+        <input type="hidden" name="id" value="{{ current_variant.id }}" data-variant-id-input>
+
+        {%- comment -%}
+          The picker is driven by this map rather than by one button per variant,
+          because the same colour list is rendered twice — once per unit.
+        {%- endcomment -%}
+        <script type="application/json" data-lxm-variants>
+          [
+            {%- for variant in product.variants -%}
+              {
+                "id": {{ variant.id | json }},
+                "color": {{ variant.option1 | json }},
+                "price": {{ variant.price | json }},
+                "compare": {{ variant.compare_at_price | default: 0 | json }},
+                "priceStr": {{ variant.price | money_without_trailing_zeros | json }},
+                "compareStr": {{ variant.compare_at_price | money_without_trailing_zeros | json }},
+                "available": {{ variant.available | json }},
+                "tracked": {% if variant.inventory_management != blank %}true{% else %}false{% endif %},
+                "inv": {{ variant.inventory_quantity | json }},
+                "img": {% if variant.featured_image %}{{ variant.featured_image | image_url: width: 1200 | json }}{% else %}null{% endif %}
+              }{%- unless forloop.last -%},{%- endunless -%}
+            {%- endfor -%}
+          ]
+        </script>
+
+        <div class="lxm-picker">
+          <span class="lxm-picker-label"><span data-color-label>צבע</span>: <strong data-selected-color-name>{{ current_variant.option1 }}</strong></span>
+          <div class="lxm-swatch-row">
+            {% for value in color_values %}
+              {%- liquid
+                assign swatch_img = ''
+                for variant in product.variants
+                  if variant.option1 == value and variant.featured_image
+                    assign swatch_img = variant.featured_image | image_url: width: 120
+                    break
+                  endif
+                endfor
+              -%}
+              <button
+                type="button"
+                class="lxm-swatch{% if value == current_variant.option1 %} lxm-swatch-active{% endif %}"
+                data-color="{{ value | escape }}"
+                aria-pressed="{% if value == current_variant.option1 %}true{% else %}false{% endif %}">
+                <span class="lxm-swatch-dot" style="background-image:url({{ swatch_img }});"></span>
+                <span class="lxm-swatch-name">{{ value }}</span>
+              </button>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="lxm-picker">
+          <span class="lxm-picker-label">כמה לוקחים?</span>
+          <div class="lxm-qty-row">
+            <button type="button" class="lxm-qty-card lxm-qty-active" data-qty="1" aria-pressed="true">
+              <span class="lxm-qty-card-title">יחידה אחת</span>
+              <span class="lxm-qty-card-price" data-qty-price="1"></span>
+              <span class="lxm-qty-card-sub" data-qty-sub="1"></span>
+            </button>
+            <button type="button" class="lxm-qty-card" data-qty="2" aria-pressed="false">
+              <span class="lxm-qty-card-tag">{{ section.settings.pair_tag | default: 'הכי משתלם' }}</span>
+              <span class="lxm-qty-card-title">שתי יחידות</span>
+              <span class="lxm-qty-card-price" data-qty-price="2"></span>
+              <span class="lxm-qty-card-sub" data-qty-sub="2"></span>
+            </button>
+          </div>
+        </div>
+
+        {%- comment -%}
+          Only shown once the pair is chosen: with one unit the colour question
+          is already answered above, and an empty second picker would just be
+          noise.
+        {%- endcomment -%}
+        <div class="lxm-picker" data-second-color hidden>
+          <span class="lxm-picker-label">צבע היחידה השנייה: <strong data-selected-color2-name></strong></span>
+          <div class="lxm-swatch-row">
+            {% for value in color_values %}
+              {%- liquid
+                assign swatch_img = ''
+                for variant in product.variants
+                  if variant.option1 == value and variant.featured_image
+                    assign swatch_img = variant.featured_image | image_url: width: 120
+                    break
+                  endif
+                endfor
+              -%}
+              <button
+                type="button"
+                class="lxm-swatch"
+                data-color2="{{ value | escape }}"
+                aria-pressed="false">
+                <span class="lxm-swatch-dot" style="background-image:url({{ swatch_img }});"></span>
+                <span class="lxm-swatch-name">{{ value }}</span>
+              </button>
+            {% endfor %}
+          </div>
+          <p class="lxm-pair-note">אפשר לבחור שני גוונים שונים או פעמיים את אותו גוון. ההנחה נכנסת אוטומטית בסל.</p>
+        </div>
+
+        <div class="lxm-cta">
+          <button type="submit" class="lxm-btn lxm-btn-primary" data-add-btn><span data-add-label>{{ section.settings.cta_single | default: 'אני רוצה אחד' }}</span> — <span data-price-inline>{{ current_variant.price | money_without_trailing_zeros }}</span></button>
+          <p class="lxm-cta-note">משלוח חינם תמיד (5-17 ימי עסק) · 30 יום להחזרה מכל סיבה</p>
+          <div class="lxm-secure-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <span>תשלום מאובטח ומוצפן</span>
+          </div>
+        </div>
+      {% endform %}
+
+      <div class="lxm-trust-mini">
+        <div class="lxm-trust-mini-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
+          נבדק ובטוח לתינוקות
+        </div>
+        <div class="lxm-trust-mini-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+          30 יום להחזרה
+        </div>
+      </div>
+
+      <div class="lxm-safety">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 9v4M12 16.5h.01M10.3 3.9 2.7 17a1.8 1.8 0 0 0 1.55 2.7h15.5A1.8 1.8 0 0 0 21.3 17L13.7 3.9a1.8 1.8 0 0 0-3.4 0Z"/></svg>
+        <p>ודאי שפני התינוק גלויים וחופשיים לנשימה בכל רגע, שהסנטר אינו צמוד לחזה, ושהתינוק גבוה מספיק כדי שתוכלי לנשק את ראשו. השימוש במנשא בהשגחת מבוגר בלבד.</p>
+      </div>
+
+      <div class="lxm-accordion">
+        <div class="lxm-acc-item lxm-acc-open">
+          <button type="button" class="lxm-acc-head">מה מיוחד במנשא
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="lxm-acc-body"><div class="lxm-acc-body-in">
+            <ul>
+              <li>רצועת כתף רחבה ומרופדת עם פאנל רשת נושם — מפזרת את המשקל.</li>
+              <li>אבזם פתיחה מהירה עם כוונון אורך, מתחלף בקלות בין הורים.</li>
+              <li>מושב עמוק עם בטנת רשת נושמת.</li>
+              <li>מתקפל לתוך התיק — לא תופס מקום.</li>
+            </ul>
+          </div></div>
+        </div>
+        <div class="lxm-acc-item">
+          <button type="button" class="lxm-acc-head">מידות והתאמה
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="lxm-acc-body"><div class="lxm-acc-body-in">
+            <p>מתאים לתינוקות מגיל {{ section.settings.age_range | default: '3–36 חודשים' }} ובמשקל {{ section.settings.max_weight | default: 'עד 20 ק״ג' }}. הרצועה מתכווננת ומתאימה למגוון מידות מבוגר.</p>
+          </div></div>
+        </div>
+        <div class="lxm-acc-item">
+          <button type="button" class="lxm-acc-head">משלוח והחזרות
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="lxm-acc-body"><div class="lxm-acc-body-in">
+            <p>משלוח חינם תמיד, זמן אספקה 5-17 ימי עסק. ניתן להחזיר תוך 30 יום מקבלת המוצר, מכל סיבה, במצבו המקורי.</p>
+          </div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{% render 'luxamom-bundle' %}
+
+<section class="lxm-section" id="features">
+  <div class="lxm-wrap">
+    <div class="lxm-section-head">
+      <p class="lxm-eyebrow" style="justify-content:center;">למה אמהות אוהבות אותו</p>
+      <h2>{{ section.settings.features_heading | default: 'התינוק צמוד, היד שלך פנויה' }}</h2>
+    </div>
+    <div class="lxm-feat-grid">
+      <div class="lxm-feat-card">
+        <div class="lxm-feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7c5 0 7 3 9 6s4 4 7 4"/><path d="M4 7v10"/></svg></div>
+        <h3>רצועה רחבה ומרופדת</h3>
+        <p>מפזרת את המשקל על הכתף במקום לרכז אותו על נקודה אחת.</p>
+      </div>
+      <div class="lxm-feat-card">
+        <div class="lxm-feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h6M14 12h6"/><rect x="9" y="8" width="6" height="8" rx="2"/></svg></div>
+        <h3>אבזם עם כוונון מהיר</h3>
+        <p>מתאימים למידה שלך בשנייה, ומעבירים בין הורים בלי מאמץ.</p>
+      </div>
+      <div class="lxm-feat-card">
+        <div class="lxm-feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8c4 0 5 8 9 8s5-8 9-8"/><path d="M3 14c4 0 5 4 9 4"/></svg></div>
+        <h3>בטנת רשת נושמת</h3>
+        <p>מושב עמוק ותומך עם אוורור, גם ביום חם.</p>
+      </div>
+      <div class="lxm-feat-card">
+        <div class="lxm-feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14v6a7 7 0 0 1-14 0z"/><path d="M9 19h6"/></svg></div>
+        <h3>מתקפל לתיק</h3>
+        <p>קל ולא תופס מקום — תמיד איתך ליציאות קצרות.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="lxm-section" id="specs" style="padding-top:0;">
+  <div class="lxm-wrap">
+    <div class="lxm-section-head">
+      <p class="lxm-eyebrow" style="justify-content:center;">מפרט</p>
+      <h2>הנתונים היבשים</h2>
+    </div>
+    <dl class="lxm-spec-table">
+      <div class="lxm-spec-line"><dt>טווח גיל</dt><dd>{{ section.settings.age_range | default: '3–36 חודשים' }}</dd></div>
+      <div class="lxm-spec-line"><dt>משקל מרבי</dt><dd>{{ section.settings.max_weight | default: 'עד 20 ק״ג' }}</dd></div>
+      <div class="lxm-spec-line"><dt>אופן לבישה</dt><dd>חד-כתפי, רצועה מתכווננת עם אבזם פתיחה מהירה</dd></div>
+      <div class="lxm-spec-line"><dt>אוורור</dt><dd>פאנל רשת ברצועת הכתף ובטנת רשת במושב</dd></div>
+      <div class="lxm-spec-line"><dt>גוונים</dt><dd>{% for value in color_values %}{{ value }}{% unless forloop.last %} · {% endunless %}{% endfor %}</dd></div>
+    </dl>
+  </div>
+</section>
+
+<section class="lxm-section" id="faq" style="padding-top:0;">
+  <div class="lxm-wrap">
+    <div class="lxm-section-head">
+      <p class="lxm-eyebrow" style="justify-content:center;">שאלות נפוצות</p>
+      <h2>כל מה שרצית לדעת על המנשא</h2>
+    </div>
+    <div class="lxm-accordion lxm-faq-list">
+      <div class="lxm-acc-item">
+        <button type="button" class="lxm-acc-head">מאיזה גיל אפשר להשתמש?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="lxm-acc-body"><div class="lxm-acc-body-in">
+          <p>המנשא מיועד לתינוקות בגילאי {{ section.settings.age_range | default: '3–36 חודשים' }} ובמשקל {{ section.settings.max_weight | default: 'עד 20 ק״ג' }}. בכל שימוש חשוב לוודא שהתינוק שולט היטב בראשו ושפניו גלויים וחופשיים לנשימה.</p>
+        </div></div>
+      </div>
+      <div class="lxm-acc-item">
+        <button type="button" class="lxm-acc-head">זה לא כבד על הכתף?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="lxm-acc-body"><div class="lxm-acc-body-in">
+          <p>הרצועה רחבה ומרופדת בדיוק בשביל זה — היא מפזרת את המשקל על שטח גדול יותר במקום לרכז אותו על נקודה אחת. לנשיאה ממושכת מומלץ להחליף מדי פעם את הכתף.</p>
+        </div></div>
+      </div>
+      <div class="lxm-acc-item">
+        <button type="button" class="lxm-acc-head">אפשר להתאים לכמה אנשים?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="lxm-acc-body"><div class="lxm-acc-body-in">
+          <p>כן. הרצועה מתכווננת באורכה והאבזם נפתח בלחיצה, כך שאפשר להעביר את המנשא בין שני הורים תוך שניות.</p>
+        </div></div>
+      </div>
+      <div class="lxm-acc-item">
+        <button type="button" class="lxm-acc-head">למה כדאי לקחת שניים?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="lxm-acc-body"><div class="lxm-acc-body-in">
+          <p>שני מנשאים חוסכים ₪90, ומאפשרים להשאיר אחד ברכב או אצל סבתא — וגם לכבס אחד בלי להישאר בלי מנשא. אפשר לבחור אותו גוון או שני גוונים שונים.</p>
+        </div></div>
+      </div>
+      <div class="lxm-acc-item">
+        <button type="button" class="lxm-acc-head">תוך כמה זמן ההזמנה מגיעה?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="lxm-acc-body"><div class="lxm-acc-body-in">
+          <p>המשלוח אורך בממוצע 5-17 ימי עסק, לאחר עיבוד הזמנה של 1-3 ימי עסק. משלוח חינם תמיד, ללא תלות בסכום ההזמנה.</p>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="lxm-section" id="reviews" style="padding-top:0;">
+  <div class="lxm-wrap">
+    <div class="lxm-section-head">
+      <p class="lxm-eyebrow" style="justify-content:center;">חוות דעת</p>
+      <h2>מה אומרות עלינו אמהות</h2>
+    </div>
+    {% render 'luxamom-reviews' %}
+
+    <div class="lxm-review-form-wrap">
+      {% form 'contact', id: 'lxm-review-form' %}
+        {% if form.posted_successfully? %}
+          <div class="lxm-review-thanks">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12l5 5L20 6"/></svg>
+            <p>תודה! קיבלנו את הביקורת שלך ונפרסם אותה בקרוב.</p>
+          </div>
+        {% else %}
+          <h3 class="lxm-review-form-title">כתבי ביקורת על המנשא</h3>
+          <input type="hidden" name="contact[product]" value="{{ product.title }} ({{ current_variant.title }})">
+          <input type="hidden" name="contact[subject]" value="ביקורת חדשה: {{ product.title }}">
+
+          <div class="lxm-star-rating">
+            <span class="lxm-star-rating-label">דירוג:</span>
+            <div class="lxm-stars">
+              <input type="radio" name="contact[rating]" id="lxm-star-5" value="5" checked><label for="lxm-star-5">★</label>
+              <input type="radio" name="contact[rating]" id="lxm-star-4" value="4"><label for="lxm-star-4">★</label>
+              <input type="radio" name="contact[rating]" id="lxm-star-3" value="3"><label for="lxm-star-3">★</label>
+              <input type="radio" name="contact[rating]" id="lxm-star-2" value="2"><label for="lxm-star-2">★</label>
+              <input type="radio" name="contact[rating]" id="lxm-star-1" value="1"><label for="lxm-star-1">★</label>
+            </div>
+          </div>
+
+          <div class="lxm-review-fields">
+            <input type="text" name="contact[name]" placeholder="השם שלך" required>
+            <input type="email" name="contact[email]" placeholder="האימייל שלך" required>
+            <textarea name="contact[body]" rows="4" placeholder="ספרי לנו איך היה השימוש במנשא..." required></textarea>
+          </div>
+
+          <button type="submit" class="lxm-btn lxm-btn-primary">שליחת ביקורת</button>
+          <p class="lxm-review-form-note">הביקורת תישלח לצוות LUXAMOM ותפורסם בדף לאחר אישור.</p>
+        {% endif %}
+      {% endform %}
+    </div>
+  </div>
+</section>
+
+<div class="lxm-sticky-bar" data-sticky-bar>
+  <span class="lxm-sticky-bar-price" data-sticky-price>{{ current_variant.price | money_without_trailing_zeros }}</span>
+  <button type="button" class="lxm-btn lxm-btn-primary" data-sticky-cta>{{ section.settings.cta_single | default: 'אני רוצה אחד' }}</button>
+</div>
+
+</div>
+
+<script>
+(function(){
+  var root = document.currentScript.previousElementSibling;
+  if (!root || !root.classList.contains('lxm-pdp')) { root = document.querySelector('.lxm-pdp'); }
+  if (!root) return;
+
+  var variants = [];
+  var dataEl = root.querySelector('[data-lxm-variants]');
+  try { variants = JSON.parse(dataEl.textContent); } catch (e) { return; }
+  if (!variants.length) return;
+
+  var mainImgs = root.querySelectorAll('.lxm-gallery-img');
+  var thumbs = root.querySelectorAll('.lxm-thumb');
+  // Scoped to [data-color]: the second unit's swatches carry the same class, and
+  // an unscoped selector would fire both handlers on one click.
+  var swatches = root.querySelectorAll('.lxm-swatch[data-color]');
+  var qtyCards = root.querySelectorAll('.lxm-qty-card');
+  var variantInput = root.querySelector('[data-variant-id-input]');
+  var priceNow = root.querySelector('[data-price]');
+  var priceInline = root.querySelector('[data-price-inline]');
+  var selectedNameEl = root.querySelector('[data-selected-color-name]');
+  var stickyPrice = root.querySelector('[data-sticky-price]');
+  var priceRow = root.querySelector('.lxm-price-row');
+  var addBtn = root.querySelector('[data-add-btn]');
+
+  var secondColorWrap = root.querySelector('[data-second-color]');
+  var swatches2 = root.querySelectorAll('[data-color2]');
+  var colorLabel = root.querySelector('[data-color-label]');
+  var selectedName2El = root.querySelector('[data-selected-color2-name]');
+  var addLabel = root.querySelector('[data-add-label]');
+  var stickyCta = root.querySelector('[data-sticky-cta]');
+  var stockWrap = root.querySelector('[data-stock]');
+  var stockText = root.querySelector('[data-stock-text]');
+  var pairDiscount = Math.round(parseFloat(root.getAttribute('data-pair-discount') || '0') * 100);
+  var ctaSingle = root.getAttribute('data-cta-single') || 'אני רוצה אחד';
+  var ctaPair = root.getAttribute('data-cta-pair') || 'אני רוצה שניים';
+  var stockCountText = root.getAttribute('data-stock-count-text') || 'נשארו רק {count} יחידות';
+  var stockNote = root.getAttribute('data-stock-note') || '';
+  var stockThreshold = parseInt(root.getAttribute('data-stock-threshold'), 10) || 0;
+
+  var state = { color: variants[0].color, color2: variants[0].color, qty: 1 };
+  var activeSwatch = root.querySelector('.lxm-swatch[data-color].lxm-swatch-active');
+  if (activeSwatch) {
+    state.color = activeSwatch.getAttribute('data-color');
+    state.color2 = state.color;
+  }
+
+  function findVariant(color) {
+    for (var i = 0; i < variants.length; i++) {
+      if (variants[i].color === color) return variants[i];
+    }
+    return null;
+  }
+
+  function money(cents) {
+    var value = Math.round(cents) / 100;
+    var fraction = Math.round(value * 100) % 100 === 0 ? 0 : 2;
+    return '₪' + value.toLocaleString('he-IL', { minimumFractionDigits: fraction, maximumFractionDigits: 2 });
+  }
+
+  // Two units are priced by the automatic "2 for" discount in the admin rather
+  // than by a variant, so the page derives the pair price from the same amount
+  // the cart will actually take off — change the discount and the page follows.
+  function priceFor(qty) {
+    var v = findVariant(state.color);
+    if (!v) return 0;
+    return qty === 2 ? (v.price * 2) - pairDiscount : v.price;
+  }
+
+  function compareFor(qty) {
+    var v = findVariant(state.color);
+    if (!v || !v.compare) return 0;
+    return qty === 2 ? v.compare * 2 : v.compare;
+  }
+
+  function showImage(src) {
+    if (!src) return;
+    var matched = false;
+    mainImgs.forEach(function (img) {
+      var isMatch = img.getAttribute('data-media-src') === src;
+      img.classList.toggle('lxm-active', isMatch);
+      if (isMatch) matched = true;
+    });
+    if (!matched && mainImgs[0]) mainImgs[0].classList.add('lxm-active');
+    thumbs.forEach(function (t, i) {
+      t.classList.toggle('lxm-thumb-active', mainImgs[i] && mainImgs[i].classList.contains('lxm-active'));
+    });
+  }
+
+  // The count is per colour, and it is only ever the real one: with inventory
+  // tracking on it reads the remaining units for the selected colour and stays
+  // hidden above the threshold; with tracking off it falls back to wording that
+  // makes no numeric claim, so the page never invents a number.
+  function renderStock(v) {
+    if (!stockWrap || !stockText) return;
+    if (v.tracked && v.inv > 0) {
+      if (stockThreshold && v.inv > stockThreshold) {
+        stockWrap.hidden = true;
+        return;
+      }
+      stockText.textContent = stockCountText.replace('{count}', v.inv);
+      stockWrap.hidden = false;
+      return;
+    }
+    if (!v.tracked && stockNote) {
+      stockText.textContent = stockNote;
+      stockWrap.hidden = false;
+      return;
+    }
+    stockWrap.hidden = true;
+  }
+
+  // Both quantity cards always price the currently selected colour, so the
+  // shopper compares one unit against the pair without switching anything.
+  function renderQtyCards() {
+    qtyCards.forEach(function (card) {
+      var qty = parseInt(card.getAttribute('data-qty'), 10);
+      var priceEl = card.querySelector('[data-qty-price]');
+      var subEl = card.querySelector('[data-qty-sub]');
+      if (priceEl) priceEl.textContent = money(priceFor(qty));
+      if (subEl) {
+        if (qty === 2) {
+          subEl.textContent = 'חוסכים ' + money(pairDiscount);
+        } else if (compareFor(1) > priceFor(1)) {
+          subEl.textContent = 'במקום ' + money(compareFor(1));
+        } else {
+          subEl.textContent = '';
+        }
+      }
+      var isActive = qty === state.qty;
+      card.classList.toggle('lxm-qty-active', isActive);
+      card.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+  }
+
+  function render() {
+    var v = findVariant(state.color);
+    if (!v) return;
+    var price = priceFor(state.qty);
+    var compare = compareFor(state.qty);
+    var priceStr = money(price);
+
+    if (variantInput) variantInput.value = v.id;
+    if (priceNow) priceNow.textContent = priceStr;
+    if (priceInline) priceInline.textContent = priceStr;
+    if (stickyPrice) stickyPrice.textContent = priceStr;
+    if (selectedNameEl) selectedNameEl.textContent = v.color;
+    if (colorLabel) colorLabel.textContent = state.qty === 2 ? 'צבע היחידה הראשונה' : 'צבע';
+    if (selectedName2El) selectedName2El.textContent = state.color2;
+    if (secondColorWrap) secondColorWrap.hidden = state.qty !== 2;
+
+    var wasEl = priceRow.querySelector('[data-compare-price]');
+    var offEl = priceRow.querySelector('[data-price-off]');
+    if (compare > price) {
+      if (!wasEl) {
+        wasEl = document.createElement('span');
+        wasEl.className = 'lxm-price-was';
+        wasEl.setAttribute('data-compare-price', '');
+        priceRow.appendChild(wasEl);
+      }
+      wasEl.textContent = money(compare);
+      if (!offEl) {
+        offEl = document.createElement('span');
+        offEl.className = 'lxm-price-off';
+        offEl.setAttribute('data-price-off', '');
+        priceRow.appendChild(offEl);
+      }
+      offEl.textContent = Math.round((compare - price) * 100 / compare) + '% הנחה';
+    } else {
+      if (wasEl) wasEl.remove();
+      if (offEl) offEl.remove();
+    }
+
+    // The label is a separate element so that going out of stock and back
+    // doesn't destroy the price span living inside the same button.
+    var soldOut = !v.available;
+    var cta = state.qty === 2 ? ctaPair : ctaSingle;
+    if (addBtn) addBtn.disabled = soldOut;
+    if (addLabel) addLabel.textContent = soldOut ? 'אזל מהמלאי' : cta;
+    if (stickyCta) stickyCta.textContent = soldOut ? 'אזל מהמלאי' : cta;
+    if (priceInline) priceInline.style.display = soldOut ? 'none' : '';
+
+    renderStock(v);
+
+    swatches.forEach(function (s) {
+      var isActive = s.getAttribute('data-color') === state.color;
+      s.classList.toggle('lxm-swatch-active', isActive);
+      s.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+    swatches2.forEach(function (s) {
+      var isActive = s.getAttribute('data-color2') === state.color2;
+      s.classList.toggle('lxm-swatch-active', isActive);
+      s.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+
+    renderQtyCards();
+    showImage(v.img);
+  }
+
+  swatches.forEach(function (swatch) {
+    swatch.addEventListener('click', function () {
+      state.color = swatch.getAttribute('data-color');
+      // While a single unit is selected the second colour has no meaning yet,
+      // so it follows along — picking the pair then defaults to a matching set.
+      if (state.qty !== 2) state.color2 = state.color;
+      render();
+    });
+  });
+
+  swatches2.forEach(function (swatch) {
+    swatch.addEventListener('click', function () {
+      state.color2 = swatch.getAttribute('data-color2');
+      render();
+    });
+  });
+
+  qtyCards.forEach(function (card) {
+    card.addEventListener('click', function () {
+      state.qty = parseInt(card.getAttribute('data-qty'), 10);
+      render();
+    });
+  });
+
+  // gallery thumbs
+  thumbs.forEach(function (thumb) {
+    thumb.addEventListener('click', function () {
+      var idx = thumb.getAttribute('data-thumb-index');
+      mainImgs.forEach(function (img) {
+        img.classList.toggle('lxm-active', img.getAttribute('data-gallery-index') === idx);
+      });
+      thumbs.forEach(function (t) { t.classList.toggle('lxm-thumb-active', t === thumb); });
+    });
+  });
+
+  // A pair can be two different colours, which is two cart lines — more than a
+  // single variant id can express, so the add goes through the cart API. If
+  // scripting fails entirely the form still posts natively and adds one unit.
+  function addToCart() {
+    var v1 = findVariant(state.color);
+    if (!v1) return Promise.resolve();
+    var items = [{ id: v1.id, quantity: 1 }];
+    if (state.qty === 2) {
+      var v2 = findVariant(state.color2);
+      if (!v2 || v2.id === v1.id) items[0].quantity = 2;
+      else items.push({ id: v2.id, quantity: 1 });
+    }
+    return fetch('/cart/add.js', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: items })
+    }).then(function (r) {
+      return r.json();
+    }).then(function () {
+      if (window.LXMCart && window.LXMCart.open) window.LXMCart.open();
+      else window.location.href = '/cart';
+    });
+  }
+
+  var pdpForm = root.querySelector('.lxm-pdp-form');
+  if (pdpForm) {
+    pdpForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (addBtn) addBtn.disabled = true;
+      addToCart().then(function () {
+        if (addBtn) addBtn.disabled = false;
+      }).catch(function () {
+        if (addBtn) addBtn.disabled = false;
+      });
+    });
+  }
+
+  // accordion
+  root.querySelectorAll('.lxm-accordion').forEach(function (group) {
+    var items = group.querySelectorAll('.lxm-acc-item');
+    items.forEach(function (item) {
+      var head = item.querySelector('.lxm-acc-head');
+      head.addEventListener('click', function () {
+        var isOpen = item.classList.contains('lxm-acc-open');
+        items.forEach(function (i) { i.classList.remove('lxm-acc-open'); });
+        if (!isOpen) item.classList.add('lxm-acc-open');
+      });
+    });
+  });
+
+  // sticky mobile add-to-cart bar
+  var stickyBar = root.querySelector('[data-sticky-bar]');
+  var mainCta = root.querySelector('.lxm-cta .lxm-btn-primary');
+  if (stickyBar && mainCta) {
+    var toggleSticky = function () {
+      var r = mainCta.getBoundingClientRect();
+      stickyBar.classList.toggle('lxm-sticky-visible', r.bottom < 0);
+    };
+    toggleSticky();
+    window.addEventListener('scroll', toggleSticky, { passive: true });
+    window.addEventListener('resize', toggleSticky);
+    var stickyCta = stickyBar.querySelector('[data-sticky-cta]');
+    if (stickyCta) {
+      stickyCta.addEventListener('click', function () {
+        mainCta.click();
+        mainCta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    }
+  }
+
+  render();
+})();
+</script>
+
+{% schema %}
+{
+  "name": "probe",
+  "tag": "section",
+  "settings": []
+}
+{% endschema %}
