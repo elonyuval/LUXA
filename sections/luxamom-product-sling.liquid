@@ -234,7 +234,13 @@
   data-pair-discount="{{ section.settings.pair_discount | default: '89.99' }}"
   data-cta-single="{{ section.settings.cta_single | default: 'אני רוצה אחד' | escape }}"
   data-cta-pair="{{ section.settings.cta_pair | default: 'אני רוצה שניים' | escape }}"
-  data-stock-count-text="{{ section.settings.stock_count_text | default: 'נשארו רק {count} יחידות' | escape }}"
+  {%- comment -%}
+    No `default:` here on purpose. The placeholder is written {count}, and a
+    brace inside a Liquid string literal makes Shopify reject the whole section
+    file on upload — silently, with no error. The schema already supplies the
+    default, and the script carries its own fallback.
+  {%- endcomment -%}
+  data-stock-count-text="{{ section.settings.stock_count_text | escape }}"
   data-stock-note="{{ section.settings.stock_note | default: 'כמות מוגבלת מהמשלוח הנוכחי' | escape }}"
   data-stock-threshold="{{ section.settings.low_stock_threshold | default: 20 }}"
 >
