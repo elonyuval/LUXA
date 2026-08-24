@@ -85,7 +85,9 @@
 .lxm-cart-line{display:flex;gap:14px;}
 .lxm-cart-line img{width:76px;height:76px;border-radius:14px;object-fit:cover;background:#F3ECE3;flex:none;}
 .lxm-cart-line-info{flex:1;display:flex;flex-direction:column;gap:6px;}
-.lxm-cart-line-title{font-size:14.5px;font-weight:600;color:#4a3b30;}
+.lxm-cart-line-title{font-size:14.5px;font-weight:600;color:#4a3b30;text-decoration:none;display:block;}
+.lxm-cart-line-title:hover{text-decoration:underline;}
+.lxm-cart-line > a{flex:none;display:block;}
 .lxm-cart-line-variant{font-size:12.5px;opacity:.65;}
 .lxm-cart-line-qty{display:flex;align-items:center;gap:10px;margin-top:4px;}
 .lxm-cart-line-qty button{width:26px;height:26px;border-radius:50%;border:1px solid rgba(139,112,96,.3);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#4a3b30;font-size:15px;line-height:1;}
@@ -93,6 +95,12 @@
 .lxm-cart-line-price{font-family:'Frank Ruhl',serif;font-weight:700;color:#6b5646;white-space:nowrap;direction:ltr;unicode-bidi:isolate;}
 .lxm-cart-line-remove{font-size:12px;opacity:.5;text-decoration:underline;cursor:pointer;background:none;border:none;padding:0;margin-top:2px;color:#4a3b30;align-self:flex-start;}
 .lxm-cart-empty{text-align:center;padding:60px 20px;opacity:.6;font-size:15px;}
+.lxm-cart-loading{text-align:center;padding:60px 20px;opacity:.55;font-size:15px;}
+/* Shown instead of a silent failure, so a dropped request never looks like an
+   empty cart. */
+.lxm-cart-problem{text-align:center;padding:48px 20px;font-size:15px;color:#8a4a4d;}
+.lxm-cart-problem button{margin-top:14px;border:1px solid rgba(139,112,96,.35);background:none;border-radius:999px;padding:9px 20px;font-family:inherit;font-size:14px;cursor:pointer;color:#4a3b30;}
+.lxm-cart-note{margin:0 0 12px;font-size:13px;color:#8a4a4d;background:#f1dcdb;border-radius:12px;padding:10px 14px;text-align:center;}
 .lxm-cart-drawer-foot{padding:20px 24px 26px;border-top:1px solid rgba(139,112,96,.15);}
 .lxm-cart-saving-row{display:flex;justify-content:space-between;align-items:center;font-size:13.5px;font-weight:700;color:#8a4a4d;background:#f1dcdb;border-radius:12px;padding:10px 14px;margin-bottom:12px;}
 .lxm-cart-saving-amount{direction:ltr;unicode-bidi:isolate;}
@@ -322,18 +330,59 @@
     nudge.style.display = 'block';
   }
 
+  function esc(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function showLoading(){
+    if (!body) return;
+    body.innerHTML = '<p class="lxm-cart-loading">רגע, טוענים את הסל…</p>';
+    if (foot) foot.style.display = 'none';
+  }
+
+  // A visible, recoverable state. Before this, a failed request left the drawer
+  // silent and the shopper clicking the cart icon over and over.
+  function showProblem(){
+    if (!body) return;
+    body.innerHTML =
+      '<div class="lxm-cart-problem">' +
+        '<p>לא הצלחנו לטעון את הסל כרגע.</p>' +
+        '<button type="button" data-cart-retry>לנסות שוב</button>' +
+      '</div>';
+    if (foot) foot.style.display = 'none';
+    var retry = body.querySelector('[data-cart-retry]');
+    if (retry) retry.addEventListener('click', function(){ showLoading(); refresh(); });
+  }
+
+  function showNote(text){
+    if (!body) return;
+    var old = body.querySelector('.lxm-cart-note');
+    if (old) old.remove();
+    var note = document.createElement('p');
+    note.className = 'lxm-cart-note';
+    note.textContent = text;
+    body.insertBefore(note, body.firstChild);
+  }
+
   function renderCart(cart){
+    if (!body) return;
+    if (!isCart(cart)) { showProblem(); return; }
     var countEls = document.querySelectorAll('[data-cart-count]');
-    if (!cart || !cart.items || !cart.items.length) {
+    if (!cart.items.length) {
       body.innerHTML = '<p class="lxm-cart-empty">הסל שלך ריק</p>';
       if (foot) foot.style.display = 'none';
     } else {
       body.innerHTML = cart.items.map(function(item){
-        return '<div class="lxm-cart-line" data-line-key="' + item.key + '">' +
-          '<img src="' + (item.image || '') + '" alt="">' +
+        // The title and image are links: tapping a product name in a cart is an
+        // obvious thing to do, and used to be a dead click.
+        var href = item.url || '#';
+        return '<div class="lxm-cart-line" data-line-key="' + esc(item.key) + '">' +
+          '<a href="' + esc(href) + '" tabindex="-1" aria-hidden="true"><img src="' + esc(item.image || '') + '" alt=""></a>' +
           '<div class="lxm-cart-line-info">' +
-            '<span class="lxm-cart-line-title">' + item.product_title + '</span>' +
-            (item.variant_title && item.variant_title !== 'Default Title' ? '<span class="lxm-cart-line-variant">' + item.variant_title + '</span>' : '') +
+            '<a class="lxm-cart-line-title" href="' + esc(href) + '">' + esc(item.product_title) + '</a>' +
+            (item.variant_title && item.variant_title !== 'Default Title' ? '<span class="lxm-cart-line-variant">' + esc(item.variant_title) + '</span>' : '') +
             '<div class="lxm-cart-line-qty">' +
               '<button type="button" data-qty-decrease>−</button>' +
               '<span>' + item.quantity + '</span>' +
@@ -385,16 +434,51 @@
     updateUpsells(cart);
   }
 
+  // Every response is validated before it reaches renderCart. Shopify answers a
+  // rejected cart operation with a 422 whose body has no `items`, and an outage
+  // can answer with an HTML error page — both used to be rendered as an empty
+  // cart, or thrown as an uncaught error on the shopper's click.
+  function isCart(c){ return !!c && typeof c.item_count === 'number' && !!c.items; }
+
+  function readJson(r){
+    return r.json().then(function(j){ return j; }, function(){ return null; });
+  }
+
   function fetchCart(){
-    return fetch('/cart.js').then(function(r){ return r.json(); });
+    return fetch('/cart.js', { headers: { 'Accept': 'application/json' } })
+      .then(function(r){
+        if (!r.ok) throw new Error('cart ' + r.status);
+        return readJson(r);
+      })
+      .then(function(c){
+        if (!isCart(c)) throw new Error('cart payload');
+        return c;
+      });
+  }
+
+  // Refreshes from /cart.js, which is the only source that is always right, and
+  // never leaves the shopper looking at a blank drawer.
+  function refresh(){
+    return fetchCart().then(renderCart).catch(showProblem);
   }
 
   function changeLine(key, qty){
-    fetch('/cart/change.js', {
+    return fetch('/cart/change.js', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
       body: JSON.stringify({ id: key, quantity: qty })
-    }).then(function(r){ return r.json(); }).then(renderCart);
+    }).then(function(r){
+      return readJson(r).then(function(j){
+        if (r.ok && isCart(j)) { renderCart(j); return; }
+        // The change was refused. Keep the real cart on screen and say why.
+        return fetchCart().then(function(cart){
+          renderCart(cart);
+          showNote((j && j.description) || 'לא הצלחנו לעדכן את הכמות. נסי שוב.');
+        });
+      });
+    }).catch(function(){
+      showNote('אין חיבור כרגע. הכמות לא עודכנה.');
+    });
   }
 
   function openDrawer(){
@@ -413,7 +497,11 @@
   cartToggles.forEach(function(a){
     a.addEventListener('click', function(e){
       e.preventDefault();
-      fetchCart().then(function(cart){ renderCart(cart); openDrawer(); });
+      // The drawer opens first, unconditionally. Opening used to wait on
+      // /cart.js, so a dropped request meant the click did nothing at all.
+      openDrawer();
+      showLoading();
+      refresh();
     });
   });
 
@@ -431,6 +519,7 @@
         }).catch(function(){
           btn.disabled = false;
           btn.textContent = 'הוספה';
+          showNote('לא הצלחנו להוסיף את הפריט. נסי שוב.');
         });
       });
     });
@@ -450,31 +539,55 @@
   });
 
   window.LXMCart = {
-    open: function(){ fetchCart().then(function(cart){ renderCart(cart); openDrawer(); }); },
+    open: function(){ openDrawer(); showLoading(); return refresh(); },
     close: closeDrawer,
     addItem: function(variantId, qty){
       qty = qty || 1;
-      return fetch('/cart/add.js', {
+      var pending = fetch('/cart/add.js', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
         body: JSON.stringify({ items: [{ id: variantId, quantity: qty }] })
-      }).then(function(r){ return r.json(); }).then(function(){
-        return fetchCart();
-      }).then(function(cart){
-        renderCart(cart);
+      }).then(function(r){
+        return readJson(r).then(function(j){
+          // Only a genuine add failure may reject. Callers treat a rejection as
+          // "nothing was added" and retry with a native form post — so rejecting
+          // after a successful add would put the item in the cart twice.
+          if (!r.ok) throw new Error((j && j.description) || 'add failed');
+          return j;
+        });
+      }).then(function(){
         openDrawer();
-        return cart;
+        showLoading();
+        return fetchCart().then(function(cart){
+          renderCart(cart);
+          return cart;
+        }).catch(function(){
+          // The item is in the cart; only the refresh failed. Say so and stop —
+          // never surface this as an add failure.
+          showProblem();
+          return null;
+        });
       });
+
+      // The rejection is part of the contract — callers retry natively when the
+      // add genuinely failed. Attaching a handler here keeps a caller that
+      // forgets to catch from raising an unhandled rejection on the page, while
+      // the returned promise still rejects for callers that do catch.
+      pending.catch(function(){});
+      return pending;
     }
   };
 
+  // Priming the badge on page load must never throw: it runs on every page, and
+  // an uncaught rejection here was reported as a site error against whatever the
+  // shopper happened to click next.
   fetchCart().then(function(cart){
     document.querySelectorAll('[data-cart-count]').forEach(function(el){
       el.textContent = cart.item_count;
       el.style.display = cart.item_count > 0 ? 'flex' : 'none';
     });
     updateUpsells(cart);
-  });
+  }).catch(function(){ /* leave the badge as rendered */ });
 })();
 </script>
 

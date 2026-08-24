@@ -129,6 +129,7 @@
 
 .lxm-cta{margin-top:26px;}
 .lxm-cta-note{margin-top:12px; font-size:13px; text-align:center; opacity:.6;}
+.lxm-add-error{margin-top:12px; font-size:13.5px; text-align:center; color:#8a4a4d; background:var(--rose-soft); border-radius:12px; padding:10px 14px;}
 .lxm-secure-row{display:flex; align-items:center; justify-content:center; gap:8px; margin-top:16px; font-size:13px; color:var(--taupe-dark); opacity:.8;}
 .lxm-secure-row svg{width:16px; height:16px; flex:none;}
 
@@ -416,6 +417,7 @@
 
         <div class="lxm-cta">
           <button type="submit" class="lxm-btn lxm-btn-primary" data-add-btn><span data-add-label>{{ section.settings.cta_single | default: 'אני רוצה אחד' }}</span> — <span data-price-inline>{{ current_variant.price | money_without_trailing_zeros }}</span></button>
+          <p class="lxm-add-error" data-add-error hidden></p>
           <p class="lxm-cta-note">משלוח חינם תמיד (5-17 ימי עסק) · 30 יום להחזרה מכל סיבה</p>
           <div class="lxm-secure-row">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
@@ -675,6 +677,13 @@
     state.color2 = state.color;
   }
 
+  var addErrorEl = root.querySelector('[data-add-error]');
+  function showAddError(text) {
+    if (!addErrorEl) return;
+    addErrorEl.textContent = text || '';
+    addErrorEl.hidden = !text;
+  }
+
   function findVariant(color) {
     for (var i = 0; i < variants.length; i++) {
       if (variants[i].color === color) return variants[i];
@@ -862,6 +871,34 @@
     });
   });
 
+  // Tapping the big image is the most natural gesture on a gallery, and it used
+  // to do nothing at all — a dead click on the largest target of the page.
+  var galleryMain = root.querySelector('.lxm-gallery-main');
+  if (galleryMain && mainImgs.length > 1) {
+    var showIndex = function (idx) {
+      var s = String(idx);
+      mainImgs.forEach(function (img) {
+        img.classList.toggle('lxm-active', img.getAttribute('data-gallery-index') === s);
+      });
+      thumbs.forEach(function (t) {
+        t.classList.toggle('lxm-thumb-active', t.getAttribute('data-thumb-index') === s);
+      });
+    };
+    var advance = function () {
+      var cur = 0;
+      mainImgs.forEach(function (img, i) { if (img.classList.contains('lxm-active')) cur = i; });
+      showIndex((cur + 1) % mainImgs.length);
+    };
+    galleryMain.style.cursor = 'pointer';
+    galleryMain.setAttribute('role', 'button');
+    galleryMain.setAttribute('tabindex', '0');
+    galleryMain.setAttribute('aria-label', 'התמונה הבאה');
+    galleryMain.addEventListener('click', advance);
+    galleryMain.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); advance(); }
+    });
+  }
+
   // A pair can be two different colours, which is two cart lines — more than a
   // single variant id can express, so the add goes through the cart API. If
   // scripting fails entirely the form still posts natively and adds one unit.
@@ -876,11 +913,18 @@
     }
     return fetch('/cart/add.js', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ items: items })
     }).then(function (r) {
-      return r.json();
+      return r.json().then(function (j) { return j; }, function () { return null; })
+        .then(function (j) {
+          // A rejected add used to resolve like a success, so the drawer opened
+          // on an unchanged cart and the shopper was told nothing.
+          if (!r.ok) throw new Error((j && j.description) || 'add failed');
+          return j;
+        });
     }).then(function () {
+      showAddError('');
       if (window.LXMCart && window.LXMCart.open) window.LXMCart.open();
       else window.location.href = '/cart';
     });
@@ -891,10 +935,12 @@
     pdpForm.addEventListener('submit', function (e) {
       e.preventDefault();
       if (addBtn) addBtn.disabled = true;
+      showAddError('');
       addToCart().then(function () {
         if (addBtn) addBtn.disabled = false;
-      }).catch(function () {
+      }).catch(function (err) {
         if (addBtn) addBtn.disabled = false;
+        showAddError((err && err.message !== 'add failed' && err.message) || 'לא הצלחנו להוסיף לסל. נסי שוב.');
       });
     });
   }

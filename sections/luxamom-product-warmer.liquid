@@ -1,0 +1,612 @@
+<style>
+@font-face{font-family:'Frank Ruhl';font-weight:400;font-style:normal;font-display:swap;src:url({{ 'frl-400-he.woff2' | asset_url }}) format('woff2');unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}
+@font-face{font-family:'Frank Ruhl';font-weight:400;font-style:normal;font-display:swap;src:url({{ 'frl-400-lat.woff2' | asset_url }}) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+2000-206F,U+2122;}
+@font-face{font-family:'Frank Ruhl';font-weight:700;font-style:normal;font-display:swap;src:url({{ 'frl-700-he.woff2' | asset_url }}) format('woff2');unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}
+@font-face{font-family:'Frank Ruhl';font-weight:700;font-style:normal;font-display:swap;src:url({{ 'frl-700-lat.woff2' | asset_url }}) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+2000-206F,U+2122;}
+@font-face{font-family:'Assistant';font-weight:400;font-style:normal;font-display:swap;src:url({{ 'assist-400-he.woff2' | asset_url }}) format('woff2');unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}
+@font-face{font-family:'Assistant';font-weight:400;font-style:normal;font-display:swap;src:url({{ 'assist-400-lat.woff2' | asset_url }}) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+2000-206F,U+2122;}
+@font-face{font-family:'Assistant';font-weight:600;font-style:normal;font-display:swap;src:url({{ 'assist-600-he.woff2' | asset_url }}) format('woff2');unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F;}
+@font-face{font-family:'Assistant';font-weight:600;font-style:normal;font-display:swap;src:url({{ 'assist-600-lat.woff2' | asset_url }}) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+2000-206F,U+2122;}
+
+:root{
+  --cream:#FAF6F1;
+  --cream-2:#F3ECE3;
+  --taupe:#8B7060;
+  --taupe-dark:#6b5646;
+  --rose:#D9989A;
+  --rose-dark:#c17b7e;
+  --rose-soft:#f1dcdb;
+  --sage:#A8B8A0;
+  --ink:#3a2f28;
+  --white:#FBF8F4;
+  --shadow: 0 14px 36px rgba(107,86,70,0.10);
+}
+*{box-sizing:border-box;}
+.lxm-pdp h1,.lxm-pdp h2,.lxm-pdp h3{font-family:'Frank Ruhl',serif; font-weight:700; margin:0;}
+.lxm-pdp{background:var(--cream); color:var(--ink); font-family:'Assistant',sans-serif; direction:rtl; overflow-x:hidden; line-height:1.6;}
+.lxm-pdp p{margin:0;}
+.lxm-pdp a{text-decoration:none;color:inherit;}
+.lxm-pdp img{max-width:100%;display:block;}
+.lxm-pdp button{font-family:'Assistant',sans-serif;}
+.lxm-wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
+.lxm-pdp .lxm-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:17px 34px;border-radius:999px;font-weight:700;font-size:16.5px;cursor:pointer;
+  border:1.5px solid transparent; transition:transform .25s ease, box-shadow .25s ease, background .25s ease;
+  white-space:nowrap; width:100%;
+}
+.lxm-pdp .lxm-btn-primary{background:var(--taupe);color:var(--white);}
+.lxm-pdp .lxm-btn-primary:hover{background:var(--taupe-dark); transform:translateY(-2px); box-shadow:var(--shadow);}
+.lxm-pdp .lxm-eyebrow{
+  font-size:13px; letter-spacing:.14em; font-weight:600; color:var(--rose-dark);
+  text-transform:uppercase; display:flex; align-items:center; gap:10px;
+}
+
+/* main gallery + info layout */
+.lxm-pdp-main{padding:52px 0 20px;}
+.lxm-pdp-grid{display:grid; grid-template-columns:1.05fr .95fr; gap:64px; align-items:flex-start;}
+.lxm-gallery-main{aspect-ratio:1/1; border-radius:26px; overflow:hidden; background:var(--cream-2); box-shadow:var(--shadow); position:relative;}
+.lxm-gallery-main img{width:100%;height:100%;object-fit:cover; position:absolute; inset:0; opacity:0; transition:opacity .35s ease;}
+.lxm-gallery-main img.lxm-active{opacity:1;}
+.lxm-gallery-badge{position:absolute; top:18px; inset-inline-start:18px; background:var(--rose); color:#fff; font-size:12px; font-weight:700; padding:7px 15px; border-radius:999px; z-index:2;}
+.lxm-thumbs{display:flex; gap:12px; margin-top:16px; overflow-x:auto; padding-bottom:4px;}
+.lxm-thumbs img{width:84px; height:84px; object-fit:cover; border-radius:14px; cursor:pointer; border:2px solid transparent; opacity:.65; transition:opacity .2s ease, border-color .2s ease; flex:none;}
+.lxm-thumbs img:hover{opacity:1;}
+.lxm-thumbs img.lxm-thumb-active{opacity:1; border-color:var(--taupe);}
+
+.lxm-pdp-info{position:sticky; top:24px;}
+.lxm-pdp-info .lxm-eyebrow{justify-content:flex-start;}
+.lxm-pdp-info h1{font-size:clamp(28px,3vw,38px); margin-top:14px; color:#4a3b30; line-height:1.25;}
+.lxm-price-row{display:flex; align-items:baseline; gap:14px; margin-top:20px;}
+.lxm-price-now{font-family:'Frank Ruhl',serif; font-size:32px; font-weight:700; color:var(--taupe-dark); direction:ltr; unicode-bidi:isolate;}
+.lxm-price-was{font-size:19px; color:rgba(58,47,40,.45); text-decoration:line-through; direction:ltr; unicode-bidi:isolate;}
+.lxm-price-off{background:var(--rose-soft); color:var(--rose-dark); font-size:13px; font-weight:700; padding:5px 12px; border-radius:999px;}
+.lxm-pdp-desc{margin-top:18px; font-size:16.5px; opacity:.85; max-width:480px;}
+
+.lxm-swatches{margin-top:30px;}
+.lxm-swatches-label{font-size:14px; font-weight:600; color:var(--taupe-dark); margin-bottom:10px; display:block;}
+.lxm-swatch-row{display:flex; gap:12px; flex-wrap:wrap;}
+.lxm-swatch{
+  display:flex; flex-direction:column; align-items:center; gap:7px; cursor:pointer; background:none; border:none; padding:0;
+}
+.lxm-swatch-dot{width:38px; height:38px; border-radius:50%; border:2px solid transparent; box-shadow:0 0 0 1px rgba(58,47,40,.12); transition:border-color .2s ease, transform .2s ease;}
+.lxm-swatch.lxm-swatch-active .lxm-swatch-dot{border-color:var(--taupe-dark); transform:scale(1.08);}
+.lxm-swatch span.lxm-swatch-name{font-size:12px; color:var(--ink); opacity:.75;}
+
+.lxm-cta{margin-top:30px;}
+.lxm-cta-note{margin-top:12px; font-size:13px; text-align:center; opacity:.6;}
+.lxm-secure-row{display:flex; align-items:center; justify-content:center; gap:8px; margin-top:16px; font-size:13px; color:var(--taupe-dark); opacity:.8;}
+.lxm-secure-row svg{width:16px; height:16px; flex:none;}
+
+.lxm-trust-mini{display:flex; gap:22px; margin-top:26px; flex-wrap:wrap;}
+.lxm-trust-mini-item{display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; color:var(--taupe-dark);}
+.lxm-trust-mini-item svg{width:20px;height:20px;stroke:var(--rose-dark); flex:none;}
+
+.lxm-accordion{margin-top:34px; border-top:1px solid rgba(139,112,96,.18);}
+.lxm-acc-item{border-bottom:1px solid rgba(139,112,96,.18);}
+.lxm-acc-head{width:100%; background:none; border:none; display:flex; justify-content:space-between; align-items:center; padding:18px 2px; cursor:pointer; font-size:16px; font-weight:700; color:var(--taupe-dark); text-align:right;}
+.lxm-acc-head svg{width:16px;height:16px; transition:transform .25s ease; flex:none;}
+.lxm-acc-item.lxm-acc-open .lxm-acc-head svg{transform:rotate(180deg);}
+.lxm-acc-body{max-height:0; overflow:hidden; transition:max-height .3s ease;}
+.lxm-acc-item.lxm-acc-open .lxm-acc-body{max-height:600px;}
+.lxm-acc-body-in{padding:0 2px 20px; font-size:15px; opacity:.82; line-height:1.75;}
+.lxm-acc-body-in ul{margin:0; padding-inline-start:20px; display:flex; flex-direction:column; gap:8px;}
+
+.lxm-safety{
+  margin-top:24px; background:var(--rose-soft); border-radius:18px; padding:20px 22px; display:flex; gap:14px; align-items:flex-start;
+}
+.lxm-safety svg{width:22px;height:22px; flex:none; color:var(--rose-dark); margin-top:2px;}
+.lxm-safety p{font-size:14px; line-height:1.7; color:var(--taupe-dark);}
+
+@media(max-width:900px){
+  .lxm-pdp-grid{grid-template-columns:1fr; gap:34px;}
+  .lxm-pdp-info{position:static;}
+}
+
+/* features + set section */
+.lxm-section{padding:90px 0;}
+.lxm-section-head{text-align:center; max-width:640px; margin:0 auto 50px;}
+.lxm-section-head h2{font-size:clamp(26px,3.6vw,36px); margin-top:14px; color:var(--taupe-dark);}
+.lxm-feat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:24px;}
+.lxm-feat-card{background:var(--white); border-radius:20px; padding:28px 22px; box-shadow:var(--shadow); border:1px solid rgba(139,112,96,.08);}
+.lxm-feat-card .lxm-feat-icon{width:44px;height:44px; border-radius:50%; background:var(--rose-soft); color:var(--rose-dark); display:flex; align-items:center; justify-content:center; margin-bottom:16px;}
+.lxm-feat-card .lxm-feat-icon svg{width:20px;height:20px;}
+.lxm-feat-card h3{font-size:17px; color:var(--taupe-dark);}
+.lxm-feat-card p{font-size:14px; opacity:.78; margin-top:8px; line-height:1.65;}
+@media(max-width:900px){.lxm-feat-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:560px){.lxm-feat-grid{grid-template-columns:1fr;}}
+
+
+.lxm-review-invite{
+  max-width:560px;margin:0 auto;text-align:center;background:var(--white);
+  border-radius:24px;padding:52px 40px;box-shadow:var(--shadow);border:1px solid rgba(139,112,96,.1);
+}
+.lxm-review-invite-icon{width:56px;height:56px;border-radius:50%;background:var(--rose-soft);color:var(--rose-dark);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 20px;}
+.lxm-review-invite-icon svg{width:24px;height:24px;}
+.lxm-review-invite h3{font-family:'Frank Ruhl',serif;font-size:24px;color:var(--taupe-dark);}
+.lxm-review-invite p{margin-top:12px;font-size:15.5px;opacity:.78;line-height:1.7;}
+
+.lxm-review-form-wrap{max-width:560px;margin:28px auto 0;background:var(--white);border-radius:24px;padding:40px;box-shadow:var(--shadow);border:1px solid rgba(139,112,96,.1);}
+.lxm-review-form-title{font-family:'Frank Ruhl',serif;font-size:20px;color:var(--taupe-dark);text-align:center;}
+.lxm-star-rating{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:22px;}
+.lxm-star-rating-label{font-size:14px;font-weight:600;color:var(--taupe-dark);}
+.lxm-stars{display:flex;flex-direction:row-reverse;gap:4px;}
+.lxm-stars input{position:absolute;opacity:0;width:0;height:0;}
+.lxm-stars label{font-size:28px;color:rgba(139,112,96,.25);cursor:pointer;line-height:1;transition:color .15s ease;}
+.lxm-stars input:checked ~ label{color:var(--rose);}
+.lxm-stars label:hover, .lxm-stars label:hover ~ label{color:var(--rose-dark);}
+.lxm-review-fields{display:flex;flex-direction:column;gap:12px;margin-top:20px;}
+.lxm-review-fields input,.lxm-review-fields textarea{
+  padding:14px 18px;border-radius:16px;border:1.5px solid rgba(139,112,96,.22);
+  background:var(--cream); color:var(--ink); font-family:'Assistant',sans-serif; font-size:15px; resize:vertical;
+}
+.lxm-review-fields input::placeholder,.lxm-review-fields textarea::placeholder{color:rgba(58,47,40,.45);}
+.lxm-review-form-wrap .lxm-btn{margin-top:18px;}
+.lxm-review-form-note{margin-top:12px;font-size:12.5px;text-align:center;opacity:.55;}
+.lxm-review-thanks{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;padding:20px 0;}
+.lxm-review-thanks svg{width:40px;height:40px;color:var(--rose-dark);}
+.lxm-review-thanks p{font-size:16px;color:var(--taupe-dark);font-weight:600;}
+@media(max-width:600px){.lxm-review-form-wrap{padding:28px 22px;}}
+
+
+.lxm-faq-list{max-width:760px;margin:0 auto;}
+.lxm-faq-list .lxm-acc-head{font-size:17px;}
+
+.lxm-sticky-bar{
+  position:fixed; bottom:0; inset-inline:0; background:var(--white); box-shadow:0 -8px 24px rgba(0,0,0,.12);
+  padding:14px 20px; display:none; align-items:center; justify-content:space-between; gap:16px; z-index:60;
+  transform:translateY(100%); transition:transform .3s ease;
+}
+.lxm-sticky-bar.lxm-sticky-visible{transform:translateY(0);}
+.lxm-sticky-bar-price{font-family:'Frank Ruhl',serif; font-weight:700; font-size:20px; color:var(--taupe-dark); direction:ltr; unicode-bidi:isolate;}
+.lxm-sticky-bar button{width:auto; padding:13px 30px; font-size:15px;}
+@media(max-width:900px){.lxm-sticky-bar{display:flex;}}
+</style>
+
+<div class="lxm-pdp">
+
+{% assign product = product %}
+{% assign current_variant = product.selected_or_first_available_variant %}
+
+<section class="lxm-pdp-main">
+  <div class="lxm-wrap lxm-pdp-grid">
+
+    <div class="lxm-gallery">
+      <div class="lxm-gallery-main">
+        {% for image in product.images %}
+          <img
+            src="{{ image | image_url: width: 1200 }}"
+            alt="{{ image.alt | escape }}"
+            class="lxm-gallery-img{% if forloop.first %} lxm-active{% endif %}"
+            data-gallery-index="{{ forloop.index0 }}"
+            data-media-id="{{ image.id }}">
+        {% endfor %}
+      </div>
+      <div class="lxm-thumbs">
+        {% for image in product.images %}
+          <img
+            src="{{ image | image_url: width: 160 }}"
+            alt="{{ image.alt | escape }}"
+            class="lxm-thumb{% if forloop.first %} lxm-thumb-active{% endif %}"
+            data-thumb-index="{{ forloop.index0 }}">
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="lxm-pdp-info">
+      <p class="lxm-eyebrow">LUXAMOM</p>
+      <h1>{{ product.title }}</h1>
+
+      <div class="lxm-price-row">
+        <span class="lxm-price-now" data-price>{{ current_variant.price | money_without_trailing_zeros }}</span>
+        {% if current_variant.compare_at_price > current_variant.price %}
+          <span class="lxm-price-was" data-compare-price>{{ current_variant.compare_at_price | money_without_trailing_zeros }}</span>
+          <span class="lxm-price-off" data-price-off>
+            {{ current_variant.compare_at_price | minus: current_variant.price | times: 100.0 | divided_by: current_variant.compare_at_price | round }}% הנחה
+          </span>
+        {% endif %}
+      </div>
+
+      <p class="lxm-pdp-desc">שרוול חימום נייד עם צג דיגיטלי ו-21 רמות חום, עובד מכל מקור USB — בבית, ברכב או באמצע הלילה.</p>
+
+      {% form 'product', product, class: 'lxm-pdp-form' %}
+        <input type="hidden" name="id" value="{{ current_variant.id }}" data-variant-id-input>
+
+        <div class="lxm-swatches">
+          <span class="lxm-swatches-label">צבע: <strong data-selected-color-name>{{ current_variant.title }}</strong></span>
+          <div class="lxm-swatch-row">
+            {% for variant in product.variants %}
+              {% assign swatch_hex = '#8B7060' %}
+              {% if variant.title contains 'ורוד' %}{% assign swatch_hex = '#e8a3ae' %}{% endif %}
+              {% if variant.title contains 'קרם' %}{% assign swatch_hex = '#e6d5b8' %}{% endif %}
+              <button
+                type="button"
+                class="lxm-swatch{% if variant.id == current_variant.id %} lxm-swatch-active{% endif %}"
+                data-variant-id="{{ variant.id }}"
+                data-variant-price="{{ variant.price | money_without_trailing_zeros }}"
+                data-variant-compare="{{ variant.compare_at_price | money_without_trailing_zeros }}"
+                data-variant-compare-raw="{{ variant.compare_at_price }}"
+                data-variant-price-raw="{{ variant.price }}"
+                data-variant-name="{{ variant.title }}"
+                data-variant-image="{% if variant.featured_image %}{{ variant.featured_image | image_url: width: 1200 }}{% endif %}">
+                <span class="lxm-swatch-dot" style="background:{{ swatch_hex }};"></span>
+                <span class="lxm-swatch-name">{{ variant.title }}</span>
+              </button>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="lxm-cta">
+          <button type="submit" class="lxm-btn lxm-btn-primary">הוספה לסל — <span data-price-inline>{{ current_variant.price | money_without_trailing_zeros }}</span></button>
+          <p class="lxm-cta-note">משלוח חינם תמיד (5-17 ימי עסק) · 30 יום להחזרה מכל סיבה</p>
+          <div class="lxm-secure-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <span>תשלום מאובטח ומוצפן</span>
+          </div>
+        </div>
+      {% endform %}
+
+      <div class="lxm-trust-mini">
+        <div class="lxm-trust-mini-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
+          נבדק ובטוח לתינוקות
+        </div>
+        <div class="lxm-trust-mini-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+          30 יום להחזרה
+        </div>
+      </div>
+
+      <div class="lxm-safety">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 9v4M12 16.5h.01M10.3 3.9 2.7 17a1.8 1.8 0 0 0 1.55 2.7h15.5A1.8 1.8 0 0 0 21.3 17L13.7 3.9a1.8 1.8 0 0 0-3.4 0Z"/></svg>
+        <p>מומלץ לבדוק תמיד את טמפרטורת התוכן על פרק כף היד לפני ההאכלה, גם כשהצג הדיגיטלי מציג את הטמפרטורה שנבחרה.</p>
+      </div>
+
+      <div class="lxm-accordion">
+        <div class="lxm-acc-item lxm-acc-open">
+          <button type="button" class="lxm-acc-head">מה מיוחד במחמם
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="lxm-acc-body"><div class="lxm-acc-body-in">
+            <ul>
+              <li>צג דיגיטלי עם 21 רמות חימום — שליטה מדויקת בטמפרטורה.</li>
+              <li>עובד מכל מקור USB: פאוארבנק, מטען רכב או מחשב.</li>
+              <li>כולל כבל USB באורך 100 ס"מ.</li>
+              <li>נסגר ברצועת סקוץ' עם רצועת אחיזה לנשיאה נוחה.</li>
+            </ul>
+          </div></div>
+        </div>
+        <div class="lxm-acc-item">
+          <button type="button" class="lxm-acc-head">משלוח והחזרות
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="lxm-acc-body"><div class="lxm-acc-body-in">
+            <p>משלוח חינם תמיד, זמן אספקה 5-17 ימי עסק. ניתן להחזיר תוך 30 יום מקבלת המוצר, מכל סיבה, במצבו המקורי.</p>
+          </div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{% render 'luxamom-bundle' %}
+
+<section class="lxm-section" id="features">
+  <div class="lxm-wrap">
+    <div class="lxm-section-head">
+      <p class="lxm-eyebrow" style="justify-content:center;">למה אמהות אוהבות אותו</p>
+      <h2>בקבוק חם, בכל מקום ובכל שעה</h2>
+    </div>
+    <div class="lxm-feat-grid">
+      <div class="lxm-feat-card">
+        <div class="lxm-feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="4" width="10" height="6" rx="2"/><path d="M9 10v3a3 3 0 0 0 6 0v-3"/></svg></div>
+        <h3>21 רמות חום מדויקות</h3>
+        <p>צג דיגיטלי שמראה בדיוק על מה מחממים — בלי ניחושים.</p>
+      </div>
+      <div class="lxm-feat-card">
+        <div class="lxm-feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="7" width="14" height="10" rx="2"/><path d="M16 10h4l2 2v3l-2 2h-4"/></svg></div>
+        <h3>עובד מ-USB בכל מקום</h3>
+        <p>פאוארבנק, מטען רכב או מחשב — בלי תלות בשקע קיר.</p>
+      </div>
+      <div class="lxm-feat-card">
+        <div class="lxm-feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M4 12h10M4 17h7"/></svg></div>
+        <h3>כבל 100 ס"מ כלול</h3>
+        <p>מגיע בקנייה, בלי צורך לחפש כבל מתאים בנפרד.</p>
+      </div>
+      <div class="lxm-feat-card">
+        <div class="lxm-feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg></div>
+        <h3>קל לנשיאה</h3>
+        <p>רצועת אחיזה ורצועת סקוץ' — נכנס לכל תיק חיתולים.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="lxm-section" id="faq">
+  <div class="lxm-wrap">
+    <div class="lxm-section-head">
+      <p class="lxm-eyebrow" style="justify-content:center;">שאלות נפוצות</p>
+      <h2>כל מה שרצית לדעת על המחמם</h2>
+    </div>
+    <div class="lxm-accordion lxm-faq-list">
+      <div class="lxm-acc-item">
+        <button type="button" class="lxm-acc-head">איך משתמשים במחמם?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="lxm-acc-body"><div class="lxm-acc-body-in">
+          <p>עוטפים אותו סביב הבקבוק, מחברים לכבל USB, ובוחרים את הטמפרטורה הרצויה מתוך 21 הרמות בעזרת הצג הדיגיטלי.</p>
+        </div></div>
+      </div>
+      <div class="lxm-acc-item">
+        <button type="button" class="lxm-acc-head">אפשר לחבר לפאוארבנק או לרכב?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="lxm-acc-body"><div class="lxm-acc-body-in">
+          <p>כן, המחמם עובד מכל מקור USB תקני — פאוארבנק, מטען רכב או מחשב.</p>
+        </div></div>
+      </div>
+      <div class="lxm-acc-item">
+        <button type="button" class="lxm-acc-head">כמה זמן לוקח לחמם בקבוק?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="lxm-acc-body"><div class="lxm-acc-body-in">
+          <p>תלוי בכמות ובטמפרטורה ההתחלתית של הנוזל. הצג הדיגיטלי מציג את הטמפרטורה בזמן אמת עד שמגיעים ליעד שנבחר.</p>
+        </div></div>
+      </div>
+      <div class="lxm-acc-item">
+        <button type="button" class="lxm-acc-head">האם זה בטוח לתינוק?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="lxm-acc-body"><div class="lxm-acc-body-in">
+          <p>מומלץ תמיד לבדוק את טמפרטורת התוכן על פרק כף היד לפני ההאכלה, גם כשהצג מציג את הטמפרטורה הרצויה.</p>
+        </div></div>
+      </div>
+      <div class="lxm-acc-item">
+        <button type="button" class="lxm-acc-head">מה כלול ברכישה?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="lxm-acc-body"><div class="lxm-acc-body-in">
+          <p>מחמם הבקבוק בצבע שבחרת + כבל USB באורך 100 ס"מ.</p>
+        </div></div>
+      </div>
+      <div class="lxm-acc-item">
+        <button type="button" class="lxm-acc-head">תוך כמה זמן ההזמנה מגיעה?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="lxm-acc-body"><div class="lxm-acc-body-in">
+          <p>המשלוח אורך בממוצע 5-17 ימי עסק, לאחר עיבוד הזמנה של 1-3 ימי עסק. משלוח חינם תמיד, ללא תלות בסכום ההזמנה.</p>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="lxm-section" id="reviews">
+  <div class="lxm-wrap">
+    <div class="lxm-section-head">
+      <p class="lxm-eyebrow" style="justify-content:center;">חוות דעת</p>
+      <h2>מה אומרות עלינו אמהות</h2>
+    </div>
+    {% render 'luxamom-reviews' %}
+
+    <div class="lxm-review-form-wrap">
+      {% form 'contact', id: 'lxm-review-form' %}
+        {% if form.posted_successfully? %}
+          <div class="lxm-review-thanks">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12l5 5L20 6"/></svg>
+            <p>תודה! קיבלנו את הביקורת שלך ונפרסם אותה בקרוב.</p>
+          </div>
+        {% else %}
+          <h3 class="lxm-review-form-title">כתבי ביקורת על המחמם</h3>
+          <input type="hidden" name="contact[product]" value="{{ product.title }} ({{ current_variant.title }})">
+          <input type="hidden" name="contact[subject]" value="ביקורת חדשה: {{ product.title }}">
+
+          <div class="lxm-star-rating">
+            <span class="lxm-star-rating-label">דירוג:</span>
+            <div class="lxm-stars">
+              <input type="radio" name="contact[rating]" id="lxm-star-5" value="5" checked><label for="lxm-star-5">★</label>
+              <input type="radio" name="contact[rating]" id="lxm-star-4" value="4"><label for="lxm-star-4">★</label>
+              <input type="radio" name="contact[rating]" id="lxm-star-3" value="3"><label for="lxm-star-3">★</label>
+              <input type="radio" name="contact[rating]" id="lxm-star-2" value="2"><label for="lxm-star-2">★</label>
+              <input type="radio" name="contact[rating]" id="lxm-star-1" value="1"><label for="lxm-star-1">★</label>
+            </div>
+          </div>
+
+          <div class="lxm-review-fields">
+            <input type="text" name="contact[name]" placeholder="השם שלך" required>
+            <input type="email" name="contact[email]" placeholder="האימייל שלך" required>
+            <textarea name="contact[body]" rows="4" placeholder="ספרי לנו איך היה השימוש במחמם..." required></textarea>
+          </div>
+
+          <button type="submit" class="lxm-btn lxm-btn-primary">שליחת ביקורת</button>
+          <p class="lxm-review-form-note">הביקורת תישלח לצוות LUXAMOM ותפורסם בדף לאחר אישור.</p>
+        {% endif %}
+      {% endform %}
+    </div>
+  </div>
+</section>
+
+
+<div class="lxm-sticky-bar" data-sticky-bar>
+  <span class="lxm-sticky-bar-price" data-sticky-price>{{ current_variant.price | money_without_trailing_zeros }}</span>
+  <button type="button" class="lxm-btn lxm-btn-primary" data-sticky-cta>הוספה לסל</button>
+</div>
+
+</div>
+
+<script>
+(function(){
+  var root = document.currentScript.previousElementSibling;
+  if (!root || !root.classList.contains('lxm-pdp')) { root = document.querySelector('.lxm-pdp'); }
+  if (!root) return;
+
+  // gallery thumbs
+  var mainImgs = root.querySelectorAll('.lxm-gallery-img');
+  var thumbs = root.querySelectorAll('.lxm-thumb');
+  thumbs.forEach(function(thumb){
+    thumb.addEventListener('click', function(){
+      var idx = thumb.getAttribute('data-thumb-index');
+      mainImgs.forEach(function(img){
+        img.classList.toggle('lxm-active', img.getAttribute('data-gallery-index') === idx);
+      });
+      thumbs.forEach(function(t){ t.classList.toggle('lxm-thumb-active', t === thumb); });
+    });
+  });
+
+  // Tapping the big image is the most natural gesture on a gallery, and it used
+  // to do nothing at all — a dead click on the largest target of the page.
+  var galleryMain = root.querySelector('.lxm-gallery-main');
+  if (galleryMain && mainImgs.length > 1) {
+    var showIndex = function(idx){
+      var s = String(idx);
+      mainImgs.forEach(function(img){
+        img.classList.toggle('lxm-active', img.getAttribute('data-gallery-index') === s);
+      });
+      thumbs.forEach(function(t){
+        t.classList.toggle('lxm-thumb-active', t.getAttribute('data-thumb-index') === s);
+      });
+    };
+    var advance = function(){
+      var cur = 0;
+      mainImgs.forEach(function(img, i){ if (img.classList.contains('lxm-active')) cur = i; });
+      showIndex((cur + 1) % mainImgs.length);
+    };
+    galleryMain.style.cursor = 'pointer';
+    galleryMain.setAttribute('role', 'button');
+    galleryMain.setAttribute('tabindex', '0');
+    galleryMain.setAttribute('aria-label', 'התמונה הבאה');
+    galleryMain.addEventListener('click', advance);
+    galleryMain.addEventListener('keydown', function(e){
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); advance(); }
+    });
+  }
+
+  // variant swatches
+  var swatches = root.querySelectorAll('.lxm-swatch');
+  var variantInput = root.querySelector('[data-variant-id-input]');
+  var priceNow = root.querySelector('[data-price]');
+  var priceInline = root.querySelector('[data-price-inline]');
+  var selectedNameEl = root.querySelector('[data-selected-color-name]');
+  var stickyPrice = root.querySelector('[data-sticky-price]');
+
+  swatches.forEach(function(swatch){
+    swatch.addEventListener('click', function(){
+      swatches.forEach(function(s){ s.classList.toggle('lxm-swatch-active', s === swatch); });
+      var vid = swatch.getAttribute('data-variant-id');
+      if (variantInput) variantInput.value = vid;
+
+      var price = swatch.getAttribute('data-variant-price');
+      var compareRaw = parseFloat(swatch.getAttribute('data-variant-compare-raw') || '0');
+      var priceRaw = parseFloat(swatch.getAttribute('data-variant-price-raw') || '0');
+      if (priceNow) priceNow.textContent = price;
+      if (priceInline) priceInline.textContent = price;
+      if (stickyPrice) stickyPrice.textContent = price;
+      if (selectedNameEl) selectedNameEl.textContent = swatch.getAttribute('data-variant-name');
+
+      var priceRow = root.querySelector('.lxm-price-row');
+      var wasEl = priceRow.querySelector('[data-compare-price]');
+      var offEl = priceRow.querySelector('[data-price-off]');
+      if (compareRaw > priceRaw) {
+        var compareStr = swatch.getAttribute('data-variant-compare');
+        var pct = Math.round((compareRaw - priceRaw) * 100 / compareRaw);
+        if (!wasEl) {
+          wasEl = document.createElement('span');
+          wasEl.className = 'lxm-price-was';
+          wasEl.setAttribute('data-compare-price', '');
+          priceRow.appendChild(wasEl);
+        }
+        wasEl.textContent = compareStr;
+        if (!offEl) {
+          offEl = document.createElement('span');
+          offEl.className = 'lxm-price-off';
+          offEl.setAttribute('data-price-off', '');
+          priceRow.appendChild(offEl);
+        }
+        offEl.textContent = pct + '% הנחה';
+      } else {
+        if (wasEl) wasEl.remove();
+        if (offEl) offEl.remove();
+      }
+
+      var img = swatch.getAttribute('data-variant-image');
+      if (img) {
+        mainImgs.forEach(function(mi){ mi.classList.remove('lxm-active'); });
+        var match = null;
+        mainImgs.forEach(function(mi){ if (mi.getAttribute('src') === img) match = mi; });
+        if (match) {
+          match.classList.add('lxm-active');
+          thumbs.forEach(function(t){ t.classList.toggle('lxm-thumb-active', t.getAttribute('src') === img); });
+        } else if (mainImgs[0]) {
+          mainImgs[0].classList.add('lxm-active');
+        }
+      }
+    });
+  });
+
+  // add-to-cart via drawer (falls back to normal form submit if the drawer script isn't ready)
+  var pdpForm = root.querySelector('.lxm-pdp-form');
+  if (pdpForm) {
+    pdpForm.addEventListener('submit', function(e){
+      if (!window.LXMCart) return;
+      e.preventDefault();
+      var vid = variantInput ? variantInput.value : null;
+      if (!vid) return;
+      var submitBtn = pdpForm.querySelector('.lxm-btn-primary');
+      if (submitBtn) submitBtn.disabled = true;
+      window.LXMCart.addItem(vid, 1).then(function(){
+        if (submitBtn) submitBtn.disabled = false;
+      }).catch(function(){
+        if (submitBtn) submitBtn.disabled = false;
+        pdpForm.submit();
+      });
+    });
+  }
+
+  // accordion
+  var accGroups = root.querySelectorAll('.lxm-accordion');
+  accGroups.forEach(function(group){
+    var items = group.querySelectorAll('.lxm-acc-item');
+    items.forEach(function(item){
+      var head = item.querySelector('.lxm-acc-head');
+      head.addEventListener('click', function(){
+        var isOpen = item.classList.contains('lxm-acc-open');
+        items.forEach(function(i){ i.classList.remove('lxm-acc-open'); });
+        if (!isOpen) item.classList.add('lxm-acc-open');
+      });
+    });
+  });
+
+  // sticky mobile add-to-cart bar
+  var stickyBar = root.querySelector('[data-sticky-bar]');
+  var mainCta = root.querySelector('.lxm-cta .lxm-btn-primary');
+  if (stickyBar && mainCta) {
+    var toggleSticky = function(){
+      var r = mainCta.getBoundingClientRect();
+      var pastCta = r.bottom < 0;
+      stickyBar.classList.toggle('lxm-sticky-visible', pastCta);
+    };
+    toggleSticky();
+    window.addEventListener('scroll', toggleSticky, {passive:true});
+    window.addEventListener('resize', toggleSticky);
+    var stickyCta = stickyBar.querySelector('[data-sticky-cta]');
+    if (stickyCta) {
+      stickyCta.addEventListener('click', function(){
+        mainCta.click();
+        mainCta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    }
+  }
+})();
+</script>
+
+{% schema %}
+{
+  "name": "LUXAMOM product — warmer",
+  "tag": "section",
+  "settings": [],
+  "presets": [{ "name": "LUXAMOM product — warmer" }]
+}
+{% endschema %}

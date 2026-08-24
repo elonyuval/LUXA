@@ -364,6 +364,24 @@
   }, 200);
   setTimeout(function(){ els.forEach(function(el){ el.classList.add('lxm-in'); }); }, 4000);
 })();
+
+(function(){
+  // The image, the heading and the button were links, but the tag, description
+  // and price were not — clicking a product card anywhere else did nothing,
+  // which is what a session recorder reports as a dead click. The card is not
+  // wrapped in an anchor because it already contains anchors; instead a click
+  // anywhere in it falls through to the card's own product link.
+  document.querySelectorAll('.lxm-pcard').forEach(function(card){
+    var link = card.querySelector('a[href]:not([href="#"])');
+    if (!link) return;
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', function(e){
+      if (e.target.closest('a, button, input, textarea, select, label')) return;
+      if (window.getSelection && String(window.getSelection())) return; // let text selection be
+      link.click();
+    });
+  });
+})();
 </script>
 
 {% schema %}
