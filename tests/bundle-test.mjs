@@ -10,13 +10,15 @@ const products = [
   { name: 'תיק החתלה 3-ב-1', price: 34900, current: true },
   { name: 'מחמם בקבוק אלחוטי נייד', price: 11900 },
   { name: 'כרית מגן ראש לתינוק', price: 9900 },
-  { name: 'מנשא חיבוק', price: 16999 }
+  { name: 'מנשא חיבוק', price: 16999 },
+  { name: 'מגן בטן', price: 9999 }
 ];
 const tiers = [
   { step: 1, rate: 0, name: 'מוצר אחד', label: 'מחיר מלא' },
   { step: 2, rate: 10, name: 'שניים', label: '10% הנחה' },
   { step: 3, rate: 15, name: 'שלושה', label: '15% הנחה' },
-  { step: 4, rate: 20, name: 'ארבעה', label: '20% הנחה' }
+  { step: 4, rate: 20, name: 'ארבעה', label: '20% הנחה' },
+  { step: 5, rate: 25, name: 'חמישה', label: '25% הנחה' }
 ];
 
 const picks = products
@@ -45,7 +47,7 @@ writeFileSync(
   DIR + '/bundle.html',
   `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><style>${style}</style></head><body>
 <section class="lxm-be"><div class="lxm-be-wrap"><div class="lxm-be-card" data-be>
-  <div class="lxm-be-row" style="grid-template-columns:repeat(4,minmax(0,1fr));">${picks}</div>
+  <div class="lxm-be-row" style="grid-template-columns:repeat(${products.length},minmax(0,1fr));" style="grid-template-columns:repeat(4,minmax(0,1fr));">${picks}</div>
   <div class="lxm-be-ladder">${ladder}</div>
   <p class="lxm-be-next" data-be-next></p>
   <div class="lxm-be-foot">
@@ -114,16 +116,25 @@ await check('four products apply 20%', async () => {
   const save = await page.textContent('[data-be-save]');
   return now === '₪589.59' && save.includes('147.4') && (await activeStep()) === '4';
 });
+// four of five is no longer the full set — it must still advertise the next tier
+await check('four of five still advertises the 25% step', async () => {
+  const t = await page.textContent('[data-be-next]');
+  return t.includes('25%') && !t.includes('הסט המלא');
+});
+
+await page.click(pick(5));
+await check('five products apply 25%', async () => (await activeStep()) === '5');
 await check('full set message at the top tier', async () =>
   (await page.textContent('[data-be-next]')).includes('הסט המלא'));
 await check('button counts the products', async () =>
-  (await page.textContent('[data-be-add]')) === 'הוספת 4 מוצרים לסל');
+  (await page.textContent('[data-be-add]')) === 'הוספת 5 מוצרים לסל');
 
 await check('locked current product cannot be removed', async () => {
   await page.click(pick(1));
-  return (await activeStep()) === '4';
+  return (await activeStep()) === '5';
 });
 
+await page.click(pick(5));
 await page.click(pick(4));
 await page.click(pick(3));
 await page.click(pick(2));
