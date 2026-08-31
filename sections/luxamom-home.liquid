@@ -149,6 +149,7 @@
   assign p_bag = all_products['תיק-חיתולים-3-ב-1-luxamom']
   assign p_warmer = all_products['מחמם-בקבוק-usb-נייד-luxamom']
   assign p_cushion = all_products['כרית-מגן-ראש-לפעוט-luxamom']
+  assign p_belt = all_products['מגן-בטן-luxamom']
   assign p_sling = all_products['מנשא-חיבוק-luxamom']
 -%}
 
@@ -196,7 +197,7 @@
   <div class="lxm-wrap">
     <div class="lxm-section-head lxm-reveal">
       <p class="lxm-eyebrow">הקולקציה שלנו</p>
-      <h2>ארבעה מוצרים. כאב אחד פחות בכל יום.</h2>
+      <h2>חמישה מוצרים. כאב אחד פחות בכל יום.</h2>
       <p>לא עוד "עוד דבר לתיק". כל מוצר נבנה סביב רגע ספציפי ביום של אמא.</p>
     </div>
     <div class="lxm-products-scroller">
@@ -235,6 +236,24 @@
             <div class="lxm-pcard-foot">
               <span class="lxm-price">{{ p_sling.price | money_without_trailing_zeros }}</span>
               <a href="{{ p_sling.url }}" class="lxm-btn lxm-btn-outline" style="padding:11px 24px;font-size:14px;">לצפייה במוצר</a>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      {% if p_belt != blank %}
+        <div class="lxm-pcard lxm-reveal">
+          <a href="{{ p_belt.url }}" class="lxm-pcard-img">
+            <span class="lxm-pcard-badge">חדש</span>
+            <img src="{{ p_belt.featured_image | image_url: width: 700 }}" alt="{{ p_belt.featured_image.alt | default: p_belt.title | escape }}" loading="lazy">
+          </a>
+          <div class="lxm-pcard-body">
+            <p class="lxm-tag">מגן בטן</p>
+            <h3><a href="{{ p_belt.url }}">החגורה במקום, הנסיעה נוחה</a></h3>
+            <p class="lxm-desc">מחזיק את חגורת המותן מתחת לבטן ועל האגן, כדי שלא תטפס ותלחץ בכל נסיעה. מותקן בשניות ועובר בין רכבים.</p>
+            <div class="lxm-pcard-foot">
+              <span class="lxm-price">{{ p_belt.price | money_without_trailing_zeros }}</span>
+              <a href="{{ p_belt.url }}" class="lxm-btn lxm-btn-outline" style="padding:11px 24px;font-size:14px;">לצפייה במוצר</a>
             </div>
           </div>
         </div>

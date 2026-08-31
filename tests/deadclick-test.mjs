@@ -134,6 +134,52 @@ const slingBody = `
   </div>
 </div>`;
 
+
+// --- the belt: one option, variant-map picker --------------------------------
+const BELT = ['שחור', 'ורוד', 'לבן', 'ירוק'];
+const beltJson = JSON.stringify(BELT.map((c, i) => ({
+  id: 44251701248078 + i, color: c, price: 9999, compare: 19998,
+  priceStr: '₪99.99', compareStr: '₪199.98', available: true, img: `${img()}?i=${i}`
+})));
+const beltBody = `
+<div class="lxm-pdp">
+  <section class="lxm-pdp-main"><div class="lxm-wrap lxm-pdp-grid">
+    <div class="lxm-gallery">
+      <div class="lxm-gallery-main"><span class="lxm-gallery-badge">חדש</span>${galleryImgs(4)}</div>
+      <div class="lxm-thumbs">${thumbImgs(4)}</div>
+    </div>
+    <div class="lxm-pdp-info">
+      <h1>מגן בטן LUXAMOM</h1>
+      <div class="lxm-price-row"><span class="lxm-price-now" data-price>₪99.99</span></div>
+      <div class="lxm-spec-row"><span class="lxm-spec-pill">התקנה בשנייה</span><span class="lxm-spec-pill">מתאים לכל רכב</span></div>
+      <form class="lxm-pdp-form" action="/cart/add" method="post">
+        <input type="hidden" name="id" value="44251701248078" data-variant-id-input>
+        <script type="application/json" data-lxm-variants>${beltJson}<\/script>
+        <div class="lxm-picker">
+          <span class="lxm-picker-label">צבע: <strong data-selected-color-name></strong></span>
+          <div class="lxm-swatch-row">${BELT.map((c, i) =>
+            `<button type="button" class="lxm-swatch${i === 0 ? ' lxm-swatch-active' : ''}" data-color="${c}" aria-pressed="${i === 0}">
+               <span class="lxm-swatch-dot"></span><span class="lxm-swatch-name">${c}</span></button>`).join('')}</div>
+        </div>
+        <div class="lxm-cta">
+          <button type="submit" class="lxm-btn lxm-btn-primary" data-add-btn><span data-add-label>הוספה לסל</span> — <span data-price-inline>₪99.99</span></button>
+          <p class="lxm-add-error" data-add-error hidden></p>
+        </div>
+      </form>
+      <div class="lxm-accordion">
+        <div class="lxm-acc-item lxm-acc-open"><button type="button" class="lxm-acc-head">א<svg viewBox="0 0 24 24"></svg></button>
+          <div class="lxm-acc-body"><div class="lxm-acc-body-in"><p>תוכן</p></div></div></div>
+        <div class="lxm-acc-item"><button type="button" class="lxm-acc-head">ב<svg viewBox="0 0 24 24"></svg></button>
+          <div class="lxm-acc-body"><div class="lxm-acc-body-in"><p>תוכן</p></div></div></div>
+      </div>
+    </div>
+  </div></section>
+  <div class="lxm-sticky-bar" data-sticky-bar>
+    <span class="lxm-sticky-bar-price" data-sticky-price>₪99.99</span>
+    <button type="button" class="lxm-btn lxm-btn-primary" data-sticky-cta>הוספה לסל</button>
+  </div>
+</div>`;
+
 // --- home product cards -----------------------------------------------------
 const card = (name, url) => `
   <div class="lxm-pcard lxm-reveal">
@@ -253,6 +299,8 @@ for (const f of ['luxamom-product-bag', 'luxamom-product-warmer', 'luxamom-produ
 }
 await sweep('luxamom-product-sling',
   harness('sling', part('luxamom-product-sling.liquid', 'style'), slingBody, part('luxamom-product-sling.liquid', 'script')));
+await sweep('luxamom-product-belt',
+  harness('belt', part('luxamom-product-belt.liquid', 'style'), beltBody, part('luxamom-product-belt.liquid', 'script')));
 await sweep('luxamom-home',
   harness('home', part('luxamom-home.liquid', 'style'), homeBody, part('luxamom-home.liquid', 'script')));
 

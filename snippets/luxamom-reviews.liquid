@@ -46,6 +46,7 @@
     assign rv_sling = all_products['מנשא-חיבוק-luxamom']
     assign rv_warmer = all_products['מחמם-בקבוק-usb-נייד-luxamom']
     assign rv_cushion = all_products['כרית-מגן-ראש-לפעוט-luxamom']
+    assign rv_belt = all_products['מגן-בטן-luxamom']
   -%}
 
   {%- comment -%}
@@ -53,12 +54,13 @@
     review yet, instead of leaving a heading over an empty strip.
   {%- endcomment -%}
   {%- capture rv_cards -%}
-    {%- for n in (1..4) -%}
+    {%- for n in (1..5) -%}
       {%- case n -%}
         {%- when 1 -%}{%- assign rv_p = rv_bag -%}
         {%- when 2 -%}{%- assign rv_p = rv_sling -%}
         {%- when 3 -%}{%- assign rv_p = rv_warmer -%}
         {%- when 4 -%}{%- assign rv_p = rv_cushion -%}
+        {%- when 5 -%}{%- assign rv_p = rv_belt -%}
       {%- endcase -%}
       {%- if rv_p == blank -%}{%- continue -%}{%- endif -%}
       {%- assign rv_list = rv_p.metafields.custom.reviews.value -%}

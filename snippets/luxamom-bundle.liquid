@@ -22,6 +22,7 @@
   assign be_warmer = all_products['מחמם-בקבוק-usb-נייד-luxamom']
   assign be_cushion = all_products['כרית-מגן-ראש-לפעוט-luxamom']
   assign be_sling = all_products['מנשא-חיבוק-luxamom']
+  assign be_belt = all_products['מגן-בטן-luxamom']
 
   assign be_count = 0
   if be_bag != blank
@@ -34,6 +35,9 @@
     assign be_count = be_count | plus: 1
   endif
   if be_sling != blank
+    assign be_count = be_count | plus: 1
+  endif
+  if be_belt != blank
     assign be_count = be_count | plus: 1
   endif
 
@@ -111,6 +115,7 @@
             {%- when 2 -%}{%- assign bep = be_warmer -%}
             {%- when 3 -%}{%- assign bep = be_cushion -%}
             {%- when 4 -%}{%- assign bep = be_sling -%}
+            {%- when 5 -%}{%- assign bep = be_belt -%}
           {%- endcase -%}
           {%- if bep == blank -%}{%- continue -%}{%- endif -%}
           {%- liquid
@@ -178,6 +183,9 @@
               when 4
                 assign step_rate = 20
                 assign step_name = 'ארבעה'
+              when 5
+                assign step_rate = 25
+                assign step_name = 'חמישה'
             endcase
           -%}
           <div class="lxm-be-step" data-be-step="{{ step }}" data-be-rate="{{ step_rate }}">

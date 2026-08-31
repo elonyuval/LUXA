@@ -127,6 +127,7 @@
   assign nav_sling = all_products['מנשא-חיבוק-luxamom']
   assign nav_warmer = all_products['מחמם-בקבוק-usb-נייד-luxamom']
   assign nav_cushion = all_products['כרית-מגן-ראש-לפעוט-luxamom']
+  assign nav_belt = all_products['מגן-בטן-luxamom']
 -%}
 
 <header class="lxm-header">
@@ -154,6 +155,7 @@
           {% if nav_sling %}<li><a href="{{ nav_sling.url }}">{{ nav_sling.title | remove: ' LUXAMOM' }}</a></li>{% endif %}
           {% if nav_warmer %}<li><a href="{{ nav_warmer.url }}">{{ nav_warmer.title | remove: ' LUXAMOM' }}</a></li>{% endif %}
           {% if nav_cushion %}<li><a href="{{ nav_cushion.url }}">{{ nav_cushion.title | remove: ' LUXAMOM' }}</a></li>{% endif %}
+          {% if nav_belt %}<li><a href="{{ nav_belt.url }}">{{ nav_belt.title | remove: ' LUXAMOM' }}</a></li>{% endif %}
         </ul>
       </li>
       {% if pages['about-luxa'] %}<li><a href="{{ pages['about-luxa'].url }}">אודות</a></li>{% endif %}
@@ -182,6 +184,7 @@
         {% if nav_sling %}<a href="{{ nav_sling.url }}">{{ nav_sling.title | remove: ' LUXAMOM' }}</a>{% endif %}
         {% if nav_warmer %}<a href="{{ nav_warmer.url }}">{{ nav_warmer.title | remove: ' LUXAMOM' }}</a>{% endif %}
         {% if nav_cushion %}<a href="{{ nav_cushion.url }}">{{ nav_cushion.title | remove: ' LUXAMOM' }}</a>{% endif %}
+        {% if nav_belt %}<a href="{{ nav_belt.url }}">{{ nav_belt.title | remove: ' LUXAMOM' }}</a>{% endif %}
       </div>
     </div>
     {% if pages['about-luxa'] %}<a href="{{ pages['about-luxa'].url }}">אודות</a>{% endif %}
@@ -205,12 +208,13 @@
     <div class="lxm-cart-upsell" data-cart-upsell>
       <p class="lxm-cart-nudge" data-cart-nudge style="display:none;"></p>
       <p class="lxm-cart-upsell-title">להשלים את הסט</p>
-      {% for n in (1..4) %}
+      {% for n in (1..5) %}
         {% case n %}
           {% when 1 %}{% assign lxm_up = nav_bag %}
           {% when 2 %}{% assign lxm_up = nav_sling %}
-          {% when 3 %}{% assign lxm_up = nav_warmer %}
-          {% when 4 %}{% assign lxm_up = nav_cushion %}
+          {% when 3 %}{% assign lxm_up = nav_belt %}
+          {% when 4 %}{% assign lxm_up = nav_warmer %}
+          {% when 5 %}{% assign lxm_up = nav_cushion %}
         {% endcase %}
         {% if lxm_up %}
           {% assign lxm_up_variant = lxm_up.selected_or_first_available_variant %}
@@ -291,7 +295,7 @@
 
   // Same tiers as the automatic discounts, indexed by how many items are in the
   // cart: 2 → 10%, 3 → 15%, 4 → 20%.
-  var BUNDLE_RATES = [0, 0, 0.10, 0.15, 0.20];
+  var BUNDLE_RATES = [0, 0, 0.10, 0.15, 0.20, 0.25];
   function rateFor(count){
     if (count < 0) return 0;
     return BUNDLE_RATES[Math.min(count, BUNDLE_RATES.length - 1)] || 0;
