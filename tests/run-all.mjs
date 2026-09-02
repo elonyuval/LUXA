@@ -33,6 +33,11 @@ for (const f of files) {
   const lines = out.split('\n');
   const p = lines.filter((l) => l.startsWith('PASS')).length;
   const bad = lines.filter((l) => FAIL.test(l));
+  // A suite that asserted nothing did not pass — it crashed, or a dependency is
+  // missing. Without this a broken suite reports "ok 0 pass 0 fail".
+  if (p === 0 && bad.length === 0) {
+    bad.push('SUITE PRODUCED NO ASSERTIONS — ' + (out.trim().split('\n').pop() || 'no output'));
+  }
   pass += p;
   fail += bad.length;
   console.log(`${bad.length ? 'FAIL' : 'ok  '}  ${f.padEnd(24)} ${String(p).padStart(3)} pass  ${bad.length} fail`);

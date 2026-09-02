@@ -1,0 +1,12 @@
+{
+  "name": "luxa-theme-tests",
+  "private": true,
+  "description": "Regression tests for the LUXAMOM storefront sections. Run: node tests/run-all.mjs",
+  "type": "module",
+  "scripts": {
+    "test": "node tests/run-all.mjs"
+  },
+  "devDependencies": {
+    "liquidjs": "^10.29.0"
+  }
+}

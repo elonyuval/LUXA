@@ -148,9 +148,17 @@
           "caption": {{ v.alt | default: 'סרטון מהשימוש במוצר' | json }},
           "poster": {{ v.preview_image | image_url: width: 900 | json }},
           "sources": [
+            {%- comment -%}
+              The separator has to be carried, not derived from forloop.last: a
+              Shopify video's last source is the HLS manifest, which is filtered
+              out here, so `unless forloop.last` would leave a trailing comma and
+              the JSON would not parse.
+            {%- endcomment -%}
+            {%- assign sep = '' -%}
             {%- for s in v.sources -%}
               {%- if s.format == 'mp4' -%}
-                { "url": {{ s.url | json }}, "height": {{ s.height | json }} }{%- unless forloop.last -%},{%- endunless -%}
+                {{ sep }}{ "url": {{ s.url | json }}, "height": {{ s.height | json }} }
+                {%- assign sep = ',' -%}
               {%- endif -%}
             {%- endfor -%}
           ]
