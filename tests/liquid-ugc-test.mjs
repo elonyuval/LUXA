@@ -13,12 +13,14 @@ import { Liquid } from 'liquidjs';
 
 const SRC = readFileSync(new URL('../snippets/luxamom-ugc.liquid', import.meta.url).pathname, 'utf8');
 
-// Everything from the shelf heading down to the player markup: the part driven
-// by product data. The player itself is static and covered by ugc-test.mjs.
+/* From the opening `assign` block down to the player markup: the part driven by
+   product data, including the metafield read and the heading default. The player
+   itself is static and is covered by ugc-test.mjs. The slice cuts inside the
+   `{%- if ugc != blank -%}` guard, so its `endif` is put back. */
 const template = SRC.slice(
-  SRC.indexOf('<section class="lxm-ugc"'),
+  SRC.indexOf('{%- liquid'),
   SRC.indexOf('<div class="lxm-vp" data-vp hidden>')
-);
+) + '{%- endif -%}';
 
 const engine = new Liquid({ strictFilters: true, strictVariables: false });
 engine.registerFilter('image_url', (v) => String(v || ''));
@@ -51,11 +53,10 @@ async function check(name, fn) {
   else { fail++; console.log('FAIL — ' + name + (err ? ' :: ' + err.message : '')); }
 }
 
+// The template reads the metafield itself, so the fixture goes in as a product.
 async function render(ugc) {
   return engine.parseAndRender(template, {
-    ugc,
-    ugc_eyebrow: 'מהלקוחות שלנו',
-    ugc_heading: 'ככה זה נראה בבית'
+    product: { metafields: { custom: { ugc_videos: { value: ugc } } } }
   });
 }
 
@@ -122,9 +123,37 @@ await check('כרטיס לכל סרטון', async () => {
   return (html.match(/data-ugc-open="/g) || []).length === 2;
 });
 
-await check('בלי סרטונים לא נוצר כרטיס', async () => {
-  const html = await render([]);
-  return !html.includes('data-ugc-open=') && data(html).length === 0;
+/* The brief is "no unnecessary caption": the heading carries the message and
+   nothing is written under a video. The alt text may only survive as an
+   accessible name. */
+await check('אין טקסט נראה מתחת לסרטון', async () => {
+  const html = await render([video({ alt: 'זהו כיתוב', duration: 9000, heights: [480] })]);
+  const visible = html
+    .replace(/aria-label="[^"]*"/g, '')
+    .replace(/<script[\s\S]*?<\/script>/g, '')
+    .replace(/<[^>]+>/g, ' ');
+  return !visible.includes('זהו כיתוב');
+});
+
+await check('הכותרת היא ההמלצה של הלקוחה', async () =>
+  (await render(real)).includes('הלקוחה מספר 1 שלנו ממליצה'));
+
+await check('אין שורת משנה ואין תווית מעל הכותרת', async () => {
+  const html = await render(real);
+  return !html.includes('lxm-ugc-sub') && !html.includes('lxm-ugc-eyebrow');
+});
+
+await check('ה-alt נשאר כשם נגיש לכרטיס', async () => {
+  const html = await render([video({ alt: 'זהו כיתוב', duration: 9000, heights: [480] })]);
+  return html.includes('aria-label="נגן סרטון: זהו כיתוב"');
+});
+
+// A product with no videos must render nothing at all — not an empty shelf, and
+// not a stray heading. Every product page carries the render call unconditionally.
+await check('מוצר בלי סרטונים לא מייצר שום פלט', async () => {
+  const empty = await render([]);
+  const missing = await engine.parseAndRender(template, {});
+  return empty.trim() === '' && missing.trim() === '';
 });
 
 console.log(`\n${pass} pass, ${fail} fail`);

@@ -29,7 +29,6 @@ const cards = VIDEOS.map((v, i) => `
       <span class="lxm-ugc-play" aria-hidden="true"><span><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span></span>
       <span class="lxm-ugc-dur">${v.dur}</span>
     </span>
-    <span class="lxm-ugc-cap">${v.caption}</span>
   </button>`).join('');
 
 const json = JSON.stringify(VIDEOS.map((v, i) => ({
@@ -101,16 +100,18 @@ const vid = (prop) => page.evaluate((p) => {
 await check('הנגן סגור בטעינה', async () => await page.isHidden('[data-vp]'));
 await check('הנגן לא מוריד וידאו לפני לחיצה', async () =>
   (await page.getAttribute('[data-vp-video]', 'preload')) === 'none');
-await check('שלושה כרטיסים עם כיתוב', async () =>
+await check('כרטיס לכל סרטון, בלי כיתוב נראה', async () =>
   (await page.locator('.lxm-ugc-card').count()) === 3 &&
-  (await page.textContent('.lxm-ugc-card >> nth=0')).includes('כמה זמן'));
+  !(await page.textContent('.lxm-ugc-card >> nth=0')).includes('כמה זמן'));
+await check('הכרטיס עדיין נושא שם נגיש', async () =>
+  (await page.getAttribute('.lxm-ugc-card >> nth=0', 'aria-label')).includes('כמה זמן'));
 
 // open
 await page.click('.lxm-ugc-card >> nth=1');
 await page.waitForTimeout(250);
 await check('לחיצה על כרטיס פותחת את הנגן', async () => await page.isVisible('[data-vp]'));
 await check('נפתח הסרטון הנכון', async () =>
-  (await page.textContent('[data-vp-caption]')) === 'נכנס לתיק?');
+  (await page.getAttribute('[data-vp] [role="dialog"]', 'aria-label')) === 'נכנס לתיק?');
 await check('הסרטון מתנגן מיד', async () => (await vid('paused')) === false);
 await check('הסאונד פועל — לא מושתק', async () => (await vid('muted')) === false);
 await check('נטענו כל האיכויות, מהנמוכה לגבוהה', async () => {
@@ -240,15 +241,15 @@ await check('F שוב יוצא ממסך מלא', async () => {
 await page.click('[data-vp-next]');
 await page.waitForTimeout(200);
 await check('חץ הבא עובר לסרטון הבא', async () =>
-  (await page.textContent('[data-vp-caption]')) === 'איך זה מרגיש אחרי שעה');
+  (await page.getAttribute('[data-vp] [role="dialog"]', 'aria-label')) === 'איך זה מרגיש אחרי שעה');
 await page.click('[data-vp-next]');
 await page.waitForTimeout(200);
 await check('אחרי האחרון חוזר לראשון', async () =>
-  (await page.textContent('[data-vp-caption]')) === 'כמה זמן לוקח להתקין?');
+  (await page.getAttribute('[data-vp] [role="dialog"]', 'aria-label')) === 'כמה זמן לוקח להתקין?');
 await page.click('[data-vp-prev]');
 await page.waitForTimeout(200);
 await check('חץ הקודם חוזר אחורה', async () =>
-  (await page.textContent('[data-vp-caption]')) === 'איך זה מרגיש אחרי שעה');
+  (await page.getAttribute('[data-vp] [role="dialog"]', 'aria-label')) === 'איך זה מרגיש אחרי שעה');
 
 // closing
 await check('Esc סוגר ועוצר את הסרטון', async () => {

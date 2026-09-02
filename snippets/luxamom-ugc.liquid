@@ -2,8 +2,9 @@
   UGC video shelf + full player.
 
   Videos come from the product metafield custom.ugc_videos (a list of Shopify
-  video files). Each card's caption is the video's own alt text, so the caption
-  and the accessible name are the same string, written once in Files.
+  video files) — two per product. Nothing is captioned: the heading carries the
+  whole message and the videos speak for themselves. A video's alt text is still
+  used, but only as the card's accessible name, never as visible text.
 
   Nothing is fetched until the shopper opens a video: the shelf shows Shopify's
   generated poster and the <video> carries preload="none".
@@ -13,13 +14,11 @@
 
   Optional params:
     heading  — section title
-    eyebrow  — small label above it
 {%- endcomment -%}
 
 {%- liquid
   assign ugc = product.metafields.custom.ugc_videos.value
-  assign ugc_heading = heading | default: 'רואים את זה אצל אמא אמיתית'
-  assign ugc_eyebrow = eyebrow | default: 'וידאו'
+  assign ugc_heading = heading | default: 'הלקוחה מספר 1 שלנו ממליצה'
 -%}
 
 {%- if ugc != blank and ugc.size > 0 -%}
@@ -28,11 +27,10 @@
 .lxm-ugc *{box-sizing:border-box;}
 .lxm-ugc-wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
 .lxm-ugc-head{text-align:center;max-width:640px;margin:0 auto 34px;}
-.lxm-ugc-eyebrow{font-size:13px;letter-spacing:.14em;font-weight:600;color:#c17b7e;text-transform:uppercase;margin:0 0 12px;}
 .lxm-ugc-title{font-family:'Frank Ruhl',serif;font-weight:700;font-size:clamp(26px,3.6vw,36px);color:#6b5646;margin:0;}
-.lxm-ugc-sub{margin-top:14px;font-size:16px;opacity:.8;}
 
-.lxm-ugc-rail{display:flex;gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px 4px 22px;margin:0 -4px;
+.lxm-ugc-rail{display:flex;gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px 4px 22px;
+  width:fit-content;max-width:100%;margin:0 auto;
   scrollbar-width:thin;scrollbar-color:#D9989A transparent;}
 .lxm-ugc-rail::-webkit-scrollbar{height:6px;}
 .lxm-ugc-rail::-webkit-scrollbar-thumb{background:rgba(139,112,96,.25);border-radius:99px;}
@@ -50,7 +48,6 @@
 .lxm-ugc-play svg{width:19px;height:19px;fill:#4a3b30;margin-inline-start:3px;}
 .lxm-ugc-dur{position:absolute;bottom:10px;inset-inline-end:10px;background:rgba(26,20,16,.78);color:#fff;font-size:11.5px;
   font-weight:600;padding:3px 9px;border-radius:999px;direction:ltr;unicode-bidi:isolate;}
-.lxm-ugc-cap{font-size:14.5px;font-weight:600;color:#4a3b30;line-height:1.45;}
 @media(max-width:600px){.lxm-ugc-card{width:63vw;}}
 
 /* ---- player ---- */
@@ -60,7 +57,6 @@
 .lxm-vp-box{position:relative;display:flex;flex-direction:column;max-height:100%;}
 .lxm-vp-stage{position:relative;background:#000;border-radius:20px;overflow:hidden;line-height:0;}
 .lxm-vp-stage video{display:block;max-height:76vh;max-width:min(92vw,430px);width:auto;height:auto;background:#000;}
-.lxm-vp-caption{color:#FAF8F5;font-size:15px;font-weight:600;margin-top:14px;text-align:center;max-width:430px;}
 .lxm-vp-close{position:absolute;top:-46px;inset-inline-end:0;background:none;border:none;color:#FAF8F5;cursor:pointer;padding:8px;}
 .lxm-vp-close svg{width:24px;height:24px;}
 .lxm-vp-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.14);border:none;color:#fff;
@@ -111,9 +107,7 @@
 <section class="lxm-ugc" id="ugc">
   <div class="lxm-ugc-wrap">
     <div class="lxm-ugc-head">
-      <p class="lxm-ugc-eyebrow">{{ ugc_eyebrow }}</p>
       <h2 class="lxm-ugc-title">{{ ugc_heading }}</h2>
-      <p class="lxm-ugc-sub">בלי סטודיו ובלי תסריט — פשוט השימוש האמיתי, ביום רגיל.</p>
     </div>
 
     <div class="lxm-ugc-rail">
@@ -135,7 +129,6 @@
             </span>
             <span class="lxm-ugc-dur">{{ mm }}:{{ ss | prepend: '0' | slice: -2, 2 }}</span>
           </span>
-          <span class="lxm-ugc-cap">{{ cap }}</span>
         </button>
       {%- endfor -%}
     </div>
@@ -222,7 +215,6 @@
         </div>
       </div>
 
-      <p class="lxm-vp-caption" data-vp-caption></p>
     </div>
   </div>
 </section>
@@ -239,7 +231,7 @@
 
   var vp = section.querySelector('[data-vp]');
   var video = section.querySelector('[data-vp-video]');
-  var captionEl = section.querySelector('[data-vp-caption]');
+  var dialog = section.querySelector('[data-vp] [role="dialog"]');
   var scrub = section.querySelector('[data-vp-scrub]');
   var fill = section.querySelector('[data-vp-fill]');
   var buf = section.querySelector('[data-vp-buf]');
@@ -278,7 +270,9 @@
       video.appendChild(el);
     });
     video.poster = item.poster;
-    captionEl.textContent = item.caption;
+    // Nothing is captioned on screen; the alt text still names the dialog for a
+    // screen reader, so the video is not announced as an unlabelled player.
+    if (dialog && item.caption) dialog.setAttribute("aria-label", item.caption);
     video.load();
   }
 
