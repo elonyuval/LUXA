@@ -1,0 +1,142 @@
+{%- comment -%}
+  "משפחת LUXAMOM" — email signup in exchange for a 10% code.
+
+  The form is Shopify's own customer form, so the address lands in Customers
+  with marketing consent and nothing custom has to be trusted with an email.
+
+  The code is shown on screen the moment she signs up rather than only being
+  emailed. An email can take minutes, land in spam, or never be configured — and
+  a shopper who signed up thirty seconds ago is still on the page and still
+  shopping. The email is the follow-up, not the delivery.
+
+  Optional params:
+    code     — the discount code to reveal (default LUXAMOM10)
+    percent  — the number shown in the copy (default 10)
+{%- endcomment -%}
+
+{%- liquid
+  assign club_code = code | default: 'LUXAMOM10'
+  assign club_percent = percent | default: 10
+-%}
+
+<style>
+.lxm-club{padding:70px 0;direction:rtl;font-family:'Assistant','Segoe UI',sans-serif;color:#3a2f28;line-height:1.6;
+  background:#F3ECE3;}
+.lxm-club *{box-sizing:border-box;}
+.lxm-club-wrap{max-width:620px;margin:0 auto;padding:0 28px;text-align:center;}
+.lxm-club-eyebrow{font-size:12.5px;letter-spacing:.16em;font-weight:700;color:#c17b7e;margin:0 0 12px;}
+.lxm-club-title{font-family:'Frank Ruhl',serif;font-weight:700;font-size:clamp(26px,3.6vw,34px);color:#6b5646;margin:0 0 12px;}
+.lxm-club-sub{font-size:16px;margin:0 auto 26px;max-width:460px;opacity:.85;}
+.lxm-club-row{display:flex;gap:9px;align-items:stretch;max-width:430px;margin:0 auto;}
+.lxm-club-input{flex:1 1 auto;min-width:0;border:1px solid rgba(139,112,96,.35);border-radius:12px;background:#fff;
+  padding:14px 15px;font:inherit;font-size:15.5px;color:#4a3b30;}
+.lxm-club-input:focus{outline:2px solid #8B7060;outline-offset:1px;}
+.lxm-club-btn{flex:0 0 auto;border:none;border-radius:12px;background:#4a3b30;color:#fff;font:inherit;font-size:15.5px;
+  font-weight:700;padding:14px 24px;cursor:pointer;}
+.lxm-club-btn:hover{background:#8B7060;}
+.lxm-club-note{margin:14px 0 0;font-size:13px;opacity:.62;}
+
+/* The reward, shown the moment she is in. */
+.lxm-club-done{max-width:430px;margin:0 auto;background:#fff;border-radius:18px;padding:26px 22px;
+  box-shadow:0 14px 34px rgba(107,86,70,.12);}
+.lxm-club-done-title{font-family:'Frank Ruhl',serif;font-size:22px;font-weight:700;color:#6b5646;margin:0 0 6px;}
+.lxm-club-done-sub{font-size:15px;margin:0 0 18px;opacity:.82;}
+.lxm-club-code{display:flex;align-items:center;justify-content:center;gap:10px;border:2px dashed #c17b7e;
+  border-radius:12px;padding:13px 16px;background:#FDF7F4;}
+.lxm-club-code-text{font-size:22px;font-weight:700;letter-spacing:.09em;color:#4a3b30;direction:ltr;unicode-bidi:isolate;}
+.lxm-club-copy{border:none;background:#F3ECE3;color:#4a3b30;border-radius:9px;padding:8px 13px;font:inherit;
+  font-size:13.5px;font-weight:600;cursor:pointer;}
+.lxm-club-copy:hover{background:#e7dbcd;}
+.lxm-club-copied{margin:11px 0 0;font-size:13.5px;font-weight:600;color:#4a7a3f;min-height:20px;}
+.lxm-club-err{margin:14px auto 0;max-width:430px;font-size:14px;color:#a3402f;}
+.lxm-club .lxm-visually-hidden{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
+  clip:rect(0 0 0 0);white-space:nowrap;border:0;}
+@media(max-width:520px){
+  .lxm-club-row{flex-direction:column;}
+  .lxm-club-btn{padding:14px;}
+}
+</style>
+
+<section class="lxm-club" id="club">
+  <div class="lxm-club-wrap">
+    {%- comment -%}
+      The success check has to live inside the form block: `form` is only bound
+      there, so testing form.posted_successfully? outside it is always false and
+      the shopper would never see her code.
+    {%- endcomment -%}
+    {%- form 'customer', id: 'lxm-club-form', class: 'lxm-club-form' -%}
+      {%- if form.posted_successfully? -%}
+        <div class="lxm-club-done" data-club-done>
+          <p class="lxm-club-done-title">ברוכה הבאה למשפחה 🤍</p>
+          <p class="lxm-club-done-sub">הנה {{ club_percent }}% הנחה על ההזמנה שלך. שלחנו לך את הקוד גם למייל.</p>
+          <div class="lxm-club-code">
+            <span class="lxm-club-code-text" data-club-code>{{ club_code }}</span>
+            <button type="button" class="lxm-club-copy" data-club-copy>העתקה</button>
+          </div>
+          <p class="lxm-club-copied" data-club-copied role="status"></p>
+        </div>
+      {%- else -%}
+        <p class="lxm-club-eyebrow">משפחת LUXAMOM</p>
+        <h2 class="lxm-club-title">{{ club_percent }}% הנחה על ההזמנה הראשונה</h2>
+        <p class="lxm-club-sub">
+          מצטרפות לרשימה ומקבלות את הקוד מיד — יחד עם מוצרים חדשים ומבצעים לפני כולן.
+        </p>
+
+        <input type="hidden" name="contact[tags]" value="newsletter,luxamom-club">
+        <input type="hidden" name="contact[accepts_marketing]" value="true">
+        <div class="lxm-club-row">
+          <label class="lxm-visually-hidden" for="lxm-club-email">כתובת מייל</label>
+          <input id="lxm-club-email" class="lxm-club-input" type="email" name="contact[email]"
+                 placeholder="כתובת המייל שלך" required autocomplete="email">
+          <button type="submit" class="lxm-club-btn">קבלי {{ club_percent }}%</button>
+        </div>
+        {%- if form.errors -%}
+          <p class="lxm-club-err">{{ form.errors | default_errors }}</p>
+        {%- endif -%}
+
+        <p class="lxm-club-note">הקוד תקף לשימוש אחד. אפשר להסיר את עצמך מהרשימה בכל רגע.</p>
+      {%- endif -%}
+    {%- endform -%}
+  </div>
+</section>
+
+<script>
+(function(){
+  var copy = document.querySelector('[data-club-copy]');
+  if (!copy) return;
+  var codeEl = document.querySelector('[data-club-code]');
+  var said = document.querySelector('[data-club-copied]');
+
+  function tell(text){ if (said) said.textContent = text; }
+
+  copy.addEventListener('click', function(){
+    var code = codeEl ? codeEl.textContent.trim() : '';
+    if (!code) return;
+
+    // The clipboard API needs a secure context and a permission that can be
+    // refused, so a selection-based fallback keeps the button honest.
+    function fallback(){
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = code;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = document.execCommand && document.execCommand('copy');
+        document.body.removeChild(ta);
+        tell(ok ? 'הקוד הועתק' : 'לא הצלחנו להעתיק — אפשר לסמן ולהעתיק ידנית');
+      } catch (e) {
+        tell('לא הצלחנו להעתיק — אפשר לסמן ולהעתיק ידנית');
+      }
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(function(){ tell('הקוד הועתק'); }, fallback);
+    } else {
+      fallback();
+    }
+  });
+})();
+</script>

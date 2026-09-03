@@ -125,18 +125,6 @@
 .lxm-home .lxm-value-item div p{font-size:15px;opacity:.8;margin-top:2px;}
 .lxm-home .lxm-value-item div strong{font-size:16px;color:var(--taupe-dark);}
 
-.lxm-home .lxm-newsletter{background:linear-gradient(135deg,var(--rose-soft),var(--cream-2)); color:var(--taupe-dark); text-align:center; padding:80px 0; border-top:1px solid rgba(139,112,96,.1); border-bottom:1px solid rgba(139,112,96,.1);}
-.lxm-home .lxm-newsletter h2{color:var(--taupe-dark); font-size:clamp(26px,3.6vw,34px);}
-.lxm-home .lxm-newsletter p{margin-top:14px;opacity:.78;font-size:16px;}
-.lxm-home .lxm-nform{margin-top:32px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;}
-.lxm-home .lxm-nform input{
-  padding:15px 22px;border-radius:999px;border:1.5px solid rgba(139,112,96,.25);
-  background:var(--white); color:var(--ink); font-family:'Assistant',sans-serif; font-size:15px;
-  min-width:280px;
-}
-.lxm-home .lxm-nform input::placeholder{color:rgba(58,47,40,.45);}
-.lxm-home .lxm-nform .lxm-btn-primary{background:var(--rose-dark);color:#fff;}
-.lxm-home .lxm-nform .lxm-btn-primary:hover{background:var(--taupe-dark);}
 
 .lxm-home .lxm-reveal{opacity:0; transform:translateY(18px); transition:opacity .7s ease, transform .7s ease;}
 .lxm-home .lxm-reveal.lxm-in{opacity:1; transform:translateY(0);}
@@ -347,17 +335,12 @@
 {%- endcomment -%}
 {% render 'luxamom-reviews', mode: 'home', per_product: 2 %}
 
-<section class="lxm-newsletter">
-  <div class="lxm-wrap">
-    <p class="lxm-eyebrow" style="color:var(--rose);">לפני כולם</p>
-    <h2 class="lxm-reveal">10% הנחה על ההזמנה הראשונה</h2>
-    <p>הצטרפי למועדון הלקוחות של LUXAMOM ותהני מהטבות בלעדיות ועדכונים על מוצרים חדשים</p>
-    <div class="lxm-nform">
-      <input type="email" placeholder="האימייל שלך">
-      <button class="lxm-btn lxm-btn-primary">שלחו לי את ההנחה</button>
-    </div>
-  </div>
-</section>
+{%- comment -%}
+  This block used to be a bare <input> and a <button> with no form around them,
+  no name attributes and no handler: it promised 10% off and did nothing at all
+  when clicked. It is now the real signup.
+{%- endcomment -%}
+{% render 'luxamom-club' %}
 </div>
 
 <script>

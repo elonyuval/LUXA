@@ -45,6 +45,7 @@ ${drawer}
   // A stand-in Shopify. SAVE10 is worth 10% of a 20000 cart; anything else is
   // accepted by the endpoint and reported back as not applicable.
   window.__net = 'ok';
+  window.__auto = false;
   window.__codes = [];
   window.__requests = [];
   function buildCart(){
@@ -61,8 +62,9 @@ ${drawer}
       discount_codes: window.__codes.map(function(c){
         return { code: c, amount: c.toUpperCase() === 'SAVE10' ? off : 0, applicable: c.toUpperCase() === 'SAVE10' };
       }),
-      cart_level_discount_applications: applied.length
-        ? [{ type: 'discount_code', title: 'SAVE10', total_allocated_amount: off }] : []
+      cart_level_discount_applications: (applied.length
+        ? [{ type: 'discount_code', title: 'SAVE10', total_allocated_amount: off }] : [])
+        .concat(window.__auto ? [{ type: 'automatic', title: 'באנדל', total_allocated_amount: 1500 }] : [])
     };
   }
   window.fetch = function(url, opts){
@@ -160,6 +162,19 @@ await check('קוד שנדחה מדווח כשגיאה, לא כהצלחה', asyn
 
 await check('הקוד התקף שרד את הקוד שנדחה', async () =>
   (await pills()).join() === 'SAVE10');
+
+/* The bundle discounts are automatic and do not combine with a code. Telling a
+   shopper her code is invalid when the cart simply has a better deal is both
+   wrong and alarming. */
+await check('קוד שנחסם בגלל באנדל מוסבר, לא נפסל', async () => {
+  await page.evaluate(() => { window.__auto = true; });
+  await page.fill('[data-cart-code-input]', 'NOPE');
+  await page.click('[data-cart-code-apply]');
+  await page.waitForTimeout(250);
+  const m = await msg();
+  await page.evaluate(() => { window.__auto = false; });
+  return m.state === 'error' && m.text.includes('באנדל') && !m.text.includes('לא תקף');
+});
 
 await check('הסרת קוד מסירה אותו', async () => {
   await page.click('[data-cart-code-remove]');

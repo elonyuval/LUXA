@@ -106,6 +106,13 @@
 .lxm-cart-saving-amount{direction:ltr;unicode-bidi:isolate;}
 .lxm-cart-subtotal-row{display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:600;color:#4a3b30;margin-bottom:14px;}
 .lxm-cart-subtotal-amount{font-family:'Frank Ruhl',serif;font-size:19px;direction:ltr;unicode-bidi:isolate;}
+/* The /cart page is Horizon's, and its discount panel gives the form a fixed
+   height while the wrapper clips whatever overflows. Any field taller than that
+   box — a larger font, a wrapped button — is revealed and then cut off, so the
+   plus appears to open nothing. Letting the form size itself removes that
+   failure mode. The header renders on every page, so this reaches /cart. */
+.cart-discount__content{height:auto;}
+
 .lxm-visually-hidden{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}
 .lxm-cart-code{margin-bottom:14px;}
 .lxm-cart-code-row{display:flex;gap:8px;align-items:stretch;}
@@ -406,6 +413,11 @@
       .reduce(function(sum, a){ return sum + (a.total_allocated_amount || 0); }, 0);
   }
 
+  function hasAutomatic(cart){
+    return ((cart && cart.cart_level_discount_applications) || [])
+      .some(function(a){ return a && a.type === 'automatic'; });
+  }
+
   function setCodeMsg(text, state){
     if (!codeMsg) return;
     codeMsg.textContent = text || '';
@@ -457,6 +469,10 @@
         if (added) {
           var ok = codesOf(cart).some(function(c){ return c.toUpperCase() === added.toUpperCase(); });
           if (ok) { setCodeMsg('הקוד הוחל.', 'ok'); if (codeInput) codeInput.value = ''; }
+          // The bundle discounts are automatic and do not combine with a code, so
+          // a rejected code usually means the cart already has a better deal.
+          // Saying "invalid" there would be both wrong and alarming.
+          else if (hasAutomatic(cart)) setCodeMsg('בסל שלך כבר פועלת הנחת באנדל, ולא ניתן לצרף אליה קוד.', 'error');
           else setCodeMsg('הקוד לא תקף או לא חל על הפריטים בסל.', 'error');
         }
         return cart;
