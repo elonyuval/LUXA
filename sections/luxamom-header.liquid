@@ -758,6 +758,12 @@
 })();
 </script>
 
+{%- comment -%}
+  Rendered from the header so it reaches every page, since the header is the one
+  section in every layout. The snippet excludes itself from the cart page.
+{%- endcomment -%}
+{% render 'luxamom-popup' %}
+
 {% schema %}
 {
   "name": "LUXAMOM header",
