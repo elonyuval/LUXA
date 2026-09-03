@@ -86,7 +86,12 @@
           <button type="button" class="lxm-pop-copy" data-pop-copy>העתקה</button>
         </div>
         <p class="lxm-pop-copied" data-pop-copied role="status"></p>
-        <a class="lxm-pop-go" href="{{ routes.all_products_collection_url }}">לצפייה במוצרים</a>
+        {%- comment -%}
+          The home page's own product shelf, not /collections/all — that page is
+          the unstyled stock template and is a poor place to land someone who has
+          just handed over an email.
+        {%- endcomment -%}
+        <a class="lxm-pop-go" href="{{ routes.root_url | append: '#products' }}" data-pop-go>לצפייה במוצרים</a>
       {%- else -%}
         <p class="lxm-pop-eyebrow">משפחת LUXAMOM</p>
         <h2 class="lxm-pop-title" id="lxm-pop-title">{{ pop_percent }}% הנחה על ההזמנה הראשונה</h2>
@@ -178,6 +183,21 @@
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   });
+
+  /* When the shelf is already on this page — which it is whenever she signed up
+     from the home page — scroll to it instead of reloading the page she is
+     standing on. The href still works on its own if this never runs. */
+  var go = pop.querySelector('[data-pop-go]');
+  if (go) {
+    go.addEventListener('click', function(e){
+      var target = document.getElementById('products');
+      if (!target) return;
+      e.preventDefault();
+      close();
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    });
+  }
 
   var copy = pop.querySelector('[data-pop-copy]');
   if (copy) {

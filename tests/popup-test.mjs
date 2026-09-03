@@ -41,7 +41,7 @@ engine.registerTag('form', {
 const render = (opts) => engine.parseAndRender(body, Object.assign({
   form: { 'posted_successfully?': false, errors: null },
   template: { name: 'index' },
-  routes: { all_products_collection_url: '/collections/all' }
+  routes: { root_url: '/', all_products_collection_url: '/collections/all' }
 }, opts || {}));
 
 let pass = 0, fail = 0;
@@ -65,12 +65,22 @@ check('הפופאפ לא קיים כלל בעמוד העגלה', cartHtml.trim()
 check('הכותרת מקושרת לדיאלוג', askHtml.includes('aria-labelledby="lxm-pop-title"'));
 check('הפופאפ מרונדר מהכותרת לכל עמוד', HEADER.includes("{% render 'luxamom-popup' %}"));
 
+/* /collections/all is the unstyled stock template — a poor place to land someone
+   who just handed over an email. The button goes to the home page's own shelf. */
+check('הכפתור מפנה לחלק המוצרים בדף הבית', doneHtml.includes('href="/#products"'));
+check('הכפתור לא מפנה לעמוד הקולקציה הגנרי', !doneHtml.includes('/collections/all'));
+
 // ---- behaviour ----
 function page(html) {
   return `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8">
   <style>${SRC.match(/<style>([\s\S]*?)<\/style>/)[1]}</style></head><body>
   <a href="#" id="before">קישור</a>
   <aside class="lxm-cart-drawer" data-cart-drawer></aside>
+  <div style="height:1400px"></div>
+  <section id="products" style="height:600px">המוצרים</section>
+  <!-- room below the shelf, so scrollIntoView can actually bring it to the top
+       rather than stopping at the end of the document -->
+  <div style="height:1600px"></div>
   ${html}
   <script>
     window.__errors = [];
@@ -165,6 +175,19 @@ await p2.click('[data-pop-copy]');
 await p2.waitForTimeout(200);
 check('דפדפן בלי clipboard API עדיין מעתיק',
   (await p2.evaluate(() => window.__copied)) === 'via-execCommand');
+
+// Already on the page that has the shelf: scroll to it, do not reload.
+const urlBefore = p2.url();
+await p2.click('[data-pop-go]');
+await p2.waitForTimeout(700);
+check('הכפתור סוגר את החלון', !(await p2.evaluate(() =>
+  document.querySelector('[data-lxm-pop]').classList.contains('lxm-pop-open'))));
+check('הכפתור גולל לחלק המוצרים',
+  (await p2.evaluate(() => {
+    const r = document.getElementById('products').getBoundingClientRect();
+    return r.top > -20 && r.top < 120;
+  })));
+check('לא נטען מחדש עמוד שכבר עומדים בו', p2.url() === urlBefore);
 
 const errs = [...pageErrors,
   ...(await p.evaluate(() => window.__errors.slice())),
