@@ -133,8 +133,8 @@ await check('גרשיים ב-alt לא שוברים את המארקאפ', async (
          !html.includes('aria-label="זה "');
 });
 
-await check('הכותרת היא ההמלצה של הלקוחה', async () =>
-  (await render(real)).includes('הלקוחה מספר 1 שלנו ממליצה'));
+await check('הכותרת הכללית מוצגת', async () =>
+  (await render(real)).includes('רגעים אמיתיים עם LUXAMOM'));
 
 await check('אין שורת משנה ואין תווית מעל הכותרת', async () => {
   const html = await render(real);
