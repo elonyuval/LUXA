@@ -12,11 +12,18 @@
   Optional params:
     code     — the discount code to reveal (default LUXAMOM10)
     percent  — the number shown in the copy (default 10)
+    emailed  — true only once a welcome automation is actually live
+
+  `emailed` defaults to FALSE on purpose. Telling a shopper an email is on its
+  way when nothing sends one is a promise the shop cannot keep: she stops
+  reading, waits for a mail that never arrives, and loses the code. Turn it on
+  in the same change that turns the automation on, not before.
 {%- endcomment -%}
 
 {%- liquid
   assign club_code = code | default: 'LUXAMOM10'
   assign club_percent = percent | default: 10
+  assign club_emailed = emailed | default: false
 -%}
 
 <style>
@@ -68,7 +75,10 @@
       {%- if form.posted_successfully? -%}
         <div class="lxm-club-done" data-club-done>
           <p class="lxm-club-done-title">ברוכה הבאה למשפחה 🤍</p>
-          <p class="lxm-club-done-sub">הנה {{ club_percent }}% הנחה על ההזמנה שלך. שלחנו לך את הקוד גם למייל.</p>
+          <p class="lxm-club-done-sub">
+            הנה {{ club_percent }}% הנחה על ההזמנה שלך.
+            {% if club_emailed %}שלחנו לך את הקוד גם למייל.{% else %}כדאי להעתיק אותו עכשיו.{% endif %}
+          </p>
           <div class="lxm-club-code">
             <span class="lxm-club-code-text" data-club-code>{{ club_code }}</span>
             <button type="button" class="lxm-club-copy" data-club-copy>העתקה</button>

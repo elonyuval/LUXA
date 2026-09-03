@@ -44,7 +44,8 @@ function check(name, ok, err) {
   else { fail++; console.log('FAIL — ' + name + (err ? ' :: ' + err : '')); }
 }
 
-const render = (posted) => engine.parseAndRender(markup, { form: { 'posted_successfully?': posted, errors: null } });
+const render = (posted, extra) => engine.parseAndRender(markup,
+  Object.assign({ form: { 'posted_successfully?': posted, errors: null } }, extra || {}));
 
 const signup = await render(false);
 const done = await render(true);
@@ -64,6 +65,14 @@ check('לפני הרשמה הקוד לא נחשף', !signup.includes('LUXAMOM10'
 check('אחרי הרשמה אין עוד שדה מייל', !done.includes('name="contact[email]"'));
 check('האחוז אחיד בכותרת ובכפתור',
   (signup.match(/10%/g) || []).length >= 2);
+
+/* No welcome automation exists in the shop, so by default the page must not say
+   an email is coming. A shopper told to expect one stops reading and waits for
+   a mail that never arrives — and loses the code she was just given. */
+check('ברירת המחדל לא מבטיחה מייל', !done.includes('למייל'));
+check('ברירת המחדל מבקשת להעתיק עכשיו', done.includes('להעתיק'));
+const emailed = await render(true, { emailed: true });
+check('כשיש אוטומציה אפשר להפעיל את ההבטחה', emailed.includes('שלחנו לך את הקוד גם למייל'));
 
 // The old block is gone from the home page and the real one is rendered.
 check('דף הבית מרנדר את הסקשן האמיתי', HOME.includes("{% render 'luxamom-club' %}"));
