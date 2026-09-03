@@ -1,10 +1,10 @@
 /*
  * The UGC snippet's Liquid, rendered for real.
  *
- * ugc-test.mjs drives the player's JavaScript, but it feeds that player a JSON
- * blob built in JavaScript — so it can never catch a fault in the Liquid that
- * emits the blob on the storefront. This renders the actual template against the
- * shape Shopify really returns and parses the result.
+ * ugc-test.mjs drives the player's JavaScript, but against markup it builds
+ * itself — so it can never catch a fault in the Liquid that produces that markup
+ * on the storefront. This renders the actual template against the shape Shopify
+ * really returns.
  *
  * Requires liquidjs (npm install).
  */
@@ -13,14 +13,11 @@ import { Liquid } from 'liquidjs';
 
 const SRC = readFileSync(new URL('../snippets/luxamom-ugc.liquid', import.meta.url).pathname, 'utf8');
 
-/* From the opening `assign` block down to the player markup: the part driven by
-   product data, including the metafield read and the heading default. The player
-   itself is static and is covered by ugc-test.mjs. The slice cuts inside the
-   `{%- if ugc != blank -%}` guard, so its `endif` is put back. */
-const template = SRC.slice(
-  SRC.indexOf('{%- liquid'),
-  SRC.indexOf('<div class="lxm-vp" data-vp hidden>')
-) + '{%- endif -%}';
+/* From the opening `assign` block down to the behaviour script: the part driven
+   by product data, including the metafield read and the heading default. The
+   slice cuts inside the `{%- if ugc != blank -%}` guard, so its `endif` is put
+   back. */
+const template = SRC.slice(SRC.indexOf('{%- liquid'), SRC.indexOf('<script>')) + '{%- endif -%}';
 
 const engine = new Liquid({ strictFilters: true, strictVariables: false });
 engine.registerFilter('image_url', (v) => String(v || ''));
@@ -33,9 +30,8 @@ engine.registerFilter('divided_by', (a, b) => {
   return Number.isInteger(x) && Number.isInteger(y) ? Math.floor(x / y) : x / y;
 });
 
-/* A Shopify video's `sources` is ordered 480p mp4, 720p mp4, HLS manifest — the
-   last entry is the one the template filters out. Renditions vary per file: a
-   short upload may have no 1080p at all. */
+/* A Shopify video's `sources` is ordered 480p mp4, 720p mp4, HLS manifest.
+   Renditions vary per file: a short upload may have no 1080p at all. */
 const video = (opts) => ({
   alt: opts.alt,
   duration: opts.duration,
@@ -60,67 +56,53 @@ async function render(ugc) {
   });
 }
 
-function data(html) {
-  const m = html.match(/<script type="application\/json" data-ugc-data>([\s\S]*?)<\/script>/);
-  if (!m) throw new Error('no data block emitted');
-  return JSON.parse(m[1]);
-}
+const srcs = (html) => [...html.matchAll(/<source src="([^"]+)"/g)].map((m) => m[1]);
 
-// The exact case that broke on the live catalogue: two mp4 renditions followed
-// by an HLS manifest, so the final source is filtered out mid-loop.
 const real = [
   video({ alt: '', duration: 13430, heights: [480, 720] }),
   video({ alt: 'נכנס לתיק?', duration: 10260, heights: [480, 720] })
 ];
 
-await check('הבלוק הוא JSON תקין כשהמקור האחרון הוא HLS', async () => {
-  data(await render(real)).length === 2;
-  return true;
+await check('נגן לכל סרטון', async () => {
+  const html = await render(real);
+  return (html.match(/data-ugc-player/g) || []).length === 2 &&
+         (html.match(/<video /g) || []).length === 2;
 });
 
-await check('רק mp4 נכנס לרשימת המקורות', async () => {
-  const d = data(await render(real));
-  return d.every((v) => v.sources.length === 2 && v.sources.every((s) => s.url.endsWith('.mp4')));
+/* A browser plays the FIRST <source> it supports, not the best one available.
+   Ordering ascending would serve every shopper the 480p rendition. */
+await check('האיכות הגבוהה ביותר מופיעה ראשונה', async () => {
+  const html = await render([video({ alt: 'א', duration: 9000, heights: [480, 1080, 720] })]);
+  return srcs(html).join(',') === 'v-1080.mp4,v-720.mp4,v-480.mp4';
 });
 
-await check('סרטון בלי HLS עדיין תקין', async () => {
-  const d = data(await render([video({ alt: 'א', duration: 9000, heights: [480, 720, 1080], hls: false })]));
-  return d[0].sources.length === 3;
+await check('מקור ה-HLS לא נכנס', async () =>
+  srcs(await render(real)).every((u) => u.endsWith('.mp4')));
+
+await check('סרטון עם איכות אחת בלבד תקין', async () =>
+  srcs(await render([video({ alt: 'א', duration: 9000, heights: [480] })])).length === 1);
+
+await check('סרטון בלי mp4 כלל לא שובר את הנגן', async () => {
+  const html = await render([video({ alt: 'א', duration: 9000, heights: [] })]);
+  return srcs(html).length === 0 && html.includes('data-ugc-player');
 });
 
-await check('סרטון עם איכות אחת בלבד תקין', async () => {
-  const d = data(await render([video({ alt: 'א', duration: 9000, heights: [480] })]));
-  return d[0].sources.length === 1;
+await check('כל סרטון טוען רק בלחיצה', async () => {
+  const html = await render(real);
+  return (html.match(/preload="none"/g) || []).length === 2 &&
+         (html.match(/poster="/g) || []).length === 2;
 });
 
-await check('סרטון בלי mp4 כלל לא שובר את ה-JSON', async () => {
-  const d = data(await render([video({ alt: 'א', duration: 9000, heights: [] })]));
-  return Array.isArray(d[0].sources) && d[0].sources.length === 0;
-});
-
-await check('alt ריק מקבל כיתוב ברירת מחדל', async () => {
-  const d = data(await render(real));
-  return d[0].caption === 'סרטון מהשימוש במוצר' && d[1].caption === 'נכנס לתיק?';
-});
-
-await check('כיתוב עם גרש נשאר JSON תקין', async () => {
-  const d = data(await render([video({ alt: 'זה "עובד" \\ באמת', duration: 9000, heights: [480] })]));
-  return d[0].caption === 'זה "עובד" \\ באמת';
-});
+await check('פקדים מובנים קיימים כגיבוי ללא JS', async () =>
+  (await render(real)).includes('controls'));
 
 await check('משך הזמן מוצג כדקות:שניות', async () => {
   const html = await render([
-    video({ alt: 'א', duration: 9820, heights: [480] }),   // 0:09
-    video({ alt: 'ב', duration: 66000, heights: [480] }),  // 1:06
-    video({ alt: 'ג', duration: 48000, heights: [480] })   // 0:48
+    video({ alt: 'א', duration: 9820, heights: [480] }),
+    video({ alt: 'ב', duration: 66000, heights: [480] }),
+    video({ alt: 'ג', duration: 48000, heights: [480] })
   ]);
-  const durs = [...html.matchAll(/class="lxm-ugc-dur">([^<]+)</g)].map((m) => m[1]);
-  return durs.join(' ') === '0:09 1:06 0:48';
-});
-
-await check('כרטיס לכל סרטון', async () => {
-  const html = await render(real);
-  return (html.match(/data-ugc-open="/g) || []).length === 2;
+  return [...html.matchAll(/class="lxm-ugc-dur">([^<]+)</g)].map((m) => m[1]).join(' ') === '0:09 1:06 0:48';
 });
 
 /* The brief is "no unnecessary caption": the heading carries the message and
@@ -130,9 +112,25 @@ await check('אין טקסט נראה מתחת לסרטון', async () => {
   const html = await render([video({ alt: 'זהו כיתוב', duration: 9000, heights: [480] })]);
   const visible = html
     .replace(/aria-label="[^"]*"/g, '')
-    .replace(/<script[\s\S]*?<\/script>/g, '')
+    .replace(/<style[\s\S]*?<\/style>/g, '')
     .replace(/<[^>]+>/g, ' ');
   return !visible.includes('זהו כיתוב');
+});
+
+await check('ה-alt נשאר כשם נגיש', async () => {
+  const html = await render([video({ alt: 'זהו כיתוב', duration: 9000, heights: [480] })]);
+  return html.includes('aria-label="נגן סרטון: זהו כיתוב"') && html.includes('aria-label="זהו כיתוב"');
+});
+
+await check('alt ריק מקבל שם נגיש ברירת מחדל', async () =>
+  (await render(real)).includes('נגן סרטון: סרטון מהשימוש במוצר'));
+
+// Shopify's `escape` emits &quot; and liquidjs emits &#34;; both are correct, so
+// the assertion is that the quote is encoded at all and the attribute holds.
+await check('גרשיים ב-alt לא שוברים את המארקאפ', async () => {
+  const html = await render([video({ alt: 'זה "עובד"', duration: 9000, heights: [480] })]);
+  return /aria-label="נגן סרטון: זה (&quot;|&#34;)עובד(&quot;|&#34;)"/.test(html) &&
+         !html.includes('aria-label="זה "');
 });
 
 await check('הכותרת היא ההמלצה של הלקוחה', async () =>
@@ -143,9 +141,11 @@ await check('אין שורת משנה ואין תווית מעל הכותרת', 
   return !html.includes('lxm-ugc-sub') && !html.includes('lxm-ugc-eyebrow');
 });
 
-await check('ה-alt נשאר כשם נגיש לכרטיס', async () => {
-  const html = await render([video({ alt: 'זהו כיתוב', duration: 9000, heights: [480] })]);
-  return html.includes('aria-label="נגן סרטון: זהו כיתוב"');
+// The overlay player is gone: playback happens in the card, in place.
+await check('אין חלון קופץ ואין שכבת רקע', async () => {
+  const html = await render(real);
+  return !html.includes('role="dialog"') && !html.includes('lxm-vp') &&
+         !SRC.includes('document.body.style.overflow');
 });
 
 // A product with no videos must render nothing at all — not an empty shelf, and
