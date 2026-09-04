@@ -85,6 +85,13 @@ check('דף הבית מרנדר את הסקשן האמיתי', HOME.includes("{%
 check('שרידי הטופס המת הוסרו',
   !HOME.includes('lxm-nform') && !HOME.includes('lxm-newsletter'));
 
+/* A landscape photo cropped into a square card runs off both edges. The card
+   picks its fit from the image's own aspect ratio, so a replacement photo
+   corrects itself instead of needing this remembered. */
+check('כרטיס מוצר מתאים את עצמו לתמונה לרוחב',
+  HOME.includes('.lxm-pcard-img.lxm-pcard-fit img{object-fit:contain;}') &&
+  (HOME.match(/featured_image\.aspect_ratio > 1/g) || []).length === 2);
+
 /* Above the reviews: at the foot of the page it was the last thing after a long
    scroll and most visitors never reached it. */
 check('ההרשמה מופיעה לפני הביקורות בדף הבית',

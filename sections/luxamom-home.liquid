@@ -95,6 +95,12 @@
 .lxm-home .lxm-pcard:hover{transform:translateY(-8px); box-shadow:0 18px 50px rgba(107,86,70,.16);}
 .lxm-home .lxm-pcard-img{aspect-ratio:1/1; display:block;position:relative;overflow:hidden;background:var(--cream-2);}
 .lxm-home .lxm-pcard-img img{width:100%;height:100%;object-fit:cover;}
+/* A landscape photo in a square card loses a quarter of its width to the crop,
+   which on a studio shot means the product itself runs off both edges. Show the
+   whole frame on white instead — applied from the image's own aspect ratio, so a
+   replacement photo corrects itself. */
+.lxm-home .lxm-pcard-img.lxm-pcard-fit{background:#fff;}
+.lxm-home .lxm-pcard-img.lxm-pcard-fit img{object-fit:contain;}
 .lxm-home .lxm-pcard-badge{position:absolute;top:16px;inset-inline-start:16px;background:var(--rose);color:#fff;font-size:11.5px;font-weight:700;padding:6px 13px;border-radius:999px;letter-spacing:.03em;}
 .lxm-home .lxm-pcard-body{padding:24px 22px 26px;display:flex;flex-direction:column;gap:10px;flex:1;}
 .lxm-home .lxm-pcard-body h3{font-size:20px;color:var(--taupe-dark);}
@@ -213,7 +219,7 @@
       {%- endcomment -%}
       {% if p_sling != blank %}
         <div class="lxm-pcard lxm-reveal">
-          <a href="{{ p_sling.url }}" class="lxm-pcard-img">
+          <a href="{{ p_sling.url }}" class="lxm-pcard-img{% if p_sling.featured_image.aspect_ratio > 1 %} lxm-pcard-fit{% endif %}">
             <span class="lxm-pcard-badge">חדש</span>
             <img src="{{ p_sling.featured_image | image_url: width: 700 }}" alt="{{ p_sling.featured_image.alt | default: p_sling.title | escape }}" loading="lazy">
           </a>
@@ -231,7 +237,7 @@
 
       {% if p_belt != blank %}
         <div class="lxm-pcard lxm-reveal">
-          <a href="{{ p_belt.url }}" class="lxm-pcard-img">
+          <a href="{{ p_belt.url }}" class="lxm-pcard-img{% if p_belt.featured_image.aspect_ratio > 1 %} lxm-pcard-fit{% endif %}">
             <span class="lxm-pcard-badge">חדש</span>
             <img src="{{ p_belt.featured_image | image_url: width: 700 }}" alt="{{ p_belt.featured_image.alt | default: p_belt.title | escape }}" loading="lazy">
           </a>
