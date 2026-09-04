@@ -24,6 +24,14 @@
   assign club_code = code | default: 'LUXAMOM10'
   assign club_percent = percent | default: 10
   assign club_emailed = emailed | default: false
+
+  # Server truth where it exists: a signed-in shopper who already accepted
+  # marketing is a subscriber, and asking her again is asking a question the
+  # shop already knows the answer to. For everyone else the browser remembers.
+  assign club_known = false
+  if customer and customer.accepts_marketing
+    assign club_known = true
+  endif
 -%}
 
 <style>
@@ -86,25 +94,51 @@
           <p class="lxm-club-copied" data-club-copied role="status"></p>
         </div>
       {%- else -%}
-        <p class="lxm-club-eyebrow">משפחת LUXAMOM</p>
-        <h2 class="lxm-club-title">{{ club_percent }}% הנחה על ההזמנה הראשונה</h2>
-        <p class="lxm-club-sub">
-          מצטרפות לרשימה ומקבלות את הקוד מיד — יחד עם מוצרים חדשים ומבצעים לפני כולן.
-        </p>
+        {%- comment -%}
+          Both panels are rendered and one is hidden, so a shopper the browser
+          remembers is never shown a form she has already filled in. The server
+          decides when it can (a signed-in subscriber); the script decides for
+          everyone else, before paint.
+        {%- endcomment -%}
+        <div class="lxm-club-ask" data-club-ask {% if club_known %}hidden{% endif %}>
+          <p class="lxm-club-eyebrow">משפחת LUXAMOM</p>
+          <h2 class="lxm-club-title">{{ club_percent }}% הנחה על ההזמנה הראשונה</h2>
+          <p class="lxm-club-sub">
+            מצטרפות לרשימה ומקבלות את הקוד מיד — יחד עם מוצרים חדשים ומבצעים לפני כולן.
+          </p>
 
-        <input type="hidden" name="contact[tags]" value="newsletter,luxamom-club">
-        <input type="hidden" name="contact[accepts_marketing]" value="true">
-        <div class="lxm-club-row">
-          <label class="lxm-visually-hidden" for="lxm-club-email">כתובת מייל</label>
-          <input id="lxm-club-email" class="lxm-club-input" type="email" name="contact[email]"
-                 placeholder="כתובת המייל שלך" required autocomplete="email">
-          <button type="submit" class="lxm-club-btn">קבלי {{ club_percent }}%</button>
+          <input type="hidden" name="contact[tags]" value="newsletter,luxamom-club">
+          <input type="hidden" name="contact[accepts_marketing]" value="true">
+          <div class="lxm-club-row">
+            <label class="lxm-visually-hidden" for="lxm-club-email">כתובת מייל</label>
+            <input id="lxm-club-email" class="lxm-club-input" type="email" name="contact[email]"
+                   placeholder="כתובת המייל שלך" required autocomplete="email" data-club-email>
+            <button type="submit" class="lxm-club-btn" data-club-submit>קבלי {{ club_percent }}%</button>
+          </div>
+          {%- if form.errors -%}
+            <p class="lxm-club-err">{{ form.errors | default_errors }}</p>
+          {%- endif -%}
+
+          <p class="lxm-club-note">הקוד תקף לשימוש אחד. אפשר להסיר את עצמך מהרשימה בכל רגע.</p>
         </div>
-        {%- if form.errors -%}
-          <p class="lxm-club-err">{{ form.errors | default_errors }}</p>
-        {%- endif -%}
 
-        <p class="lxm-club-note">הקוד תקף לשימוש אחד. אפשר להסיר את עצמך מהרשימה בכל רגע.</p>
+        <div class="lxm-club-done" data-club-already {% unless club_known %}hidden{% endunless %}>
+          <p class="lxm-club-done-title">את כבר במשפחה 🤍</p>
+          {%- comment -%}
+            Whether the code has been redeemed is not knowable from the
+            storefront, so the copy does not claim either way — it says what is
+            true and lets the cart give the definitive answer.
+          {%- endcomment -%}
+          <p class="lxm-club-done-sub">
+            נרשמת כבר, אז אין צורך להירשם שוב. אם עדיין לא ניצלת את ההנחה, זה הקוד שלך:
+          </p>
+          <div class="lxm-club-code">
+            <span class="lxm-club-code-text" data-club-code>{{ club_code }}</span>
+            <button type="button" class="lxm-club-copy" data-club-copy>העתקה</button>
+          </div>
+          <p class="lxm-club-copied" data-club-copied role="status"></p>
+          <p class="lxm-club-note">הקוד תקף לשימוש אחד בלבד.</p>
+        </div>
       {%- endif -%}
     {%- endform -%}
   </div>
@@ -112,10 +146,48 @@
 
 <script>
 (function(){
-  var copy = document.querySelector('[data-club-copy]');
+  var section = document.getElementById('club');
+  if (!section) return;
+
+  /* One key, shared with the popup, so joining in either place is remembered in
+     both. Storage throws in some private modes; a shopper whose browser cannot
+     remember simply gets asked again, which is the harmless failure. */
+  var KEY = 'lxmClubJoined';
+  function joined(){
+    try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; }
+  }
+  function remember(){
+    try { localStorage.setItem(KEY, '1'); } catch (e) {}
+  }
+
+  var ask = section.querySelector('[data-club-ask]');
+  var already = section.querySelector('[data-club-already]');
+  var done = section.querySelector('[data-club-done]');
+
+  if (done) {
+    // She just signed up on this page load.
+    remember();
+  } else if (ask && already && joined()) {
+    ask.hidden = true;
+    already.hidden = false;
+  }
+
+  // Belt and braces: if the panel is somehow still on screen, do not let a
+  // second submission through.
+  var form = section.querySelector('form');
+  if (form) {
+    form.addEventListener('submit', function(e){
+      if (!joined() || !ask || ask.hidden) return;
+      e.preventDefault();
+      ask.hidden = true;
+      if (already) already.hidden = false;
+    });
+  }
+
+  var copy = section.querySelector('[data-club-copy]');
   if (!copy) return;
-  var codeEl = document.querySelector('[data-club-code]');
-  var said = document.querySelector('[data-club-copied]');
+  var codeEl = section.querySelector('[data-club-code]');
+  var said = section.querySelector('[data-club-copied]');
 
   function tell(text){ if (said) said.textContent = text; }
 

@@ -155,6 +155,27 @@ await p.evaluate(() => document.querySelector('[data-cart-drawer]').classList.ad
 await p.waitForTimeout(700);
 check('לא קופץ בזמן שהסל פתוח', !(await open()));
 
+/* Whoever already joined — here or in the section on the home page — must not
+   be asked again. The two share one key. */
+await p.evaluate(() => { localStorage.clear(); localStorage.setItem('lxmClubJoined', '1'); });
+await p.reload();
+await p.waitForTimeout(700);
+check('מי שכבר נרשמה לא נשאלת שוב', !(await open()));
+
+const knownHtml = await render({ delay: 0.3, customer: { accepts_marketing: true } });
+check('מנוי מזוהה מסומן כידוע כבר בשרת', knownHtml.includes('data-pop-known="true"'));
+check('מבקרת אנונימית לא מסומנת ככזו', askHtml.includes('data-pop-known="false"'));
+
+writeFileSync(DIR + 'popup-known.html', page(knownHtml));
+const p3 = await ctx.newPage();
+p3.on('pageerror', (e) => pageErrors.push('pageerror: ' + e.message));
+await p3.goto('file://' + DIR + 'popup-known.html');
+await p3.evaluate(() => localStorage.clear());
+await p3.reload();
+await p3.waitForTimeout(700);
+check('מנוי מזוהה לא רואה את הבאנר כלל', !(await p3.evaluate(() =>
+  document.querySelector('[data-lxm-pop]').classList.contains('lxm-pop-open'))));
+
 // ---- the success state ----
 const p2 = await ctx.newPage();
 p2.on('pageerror', (e) => pageErrors.push('pageerror: ' + e.message));
@@ -164,6 +185,8 @@ check('אחרי הרשמה נפתח מיד בלי השהיה',
   await p2.evaluate(() => document.querySelector('[data-lxm-pop]').classList.contains('lxm-pop-open')));
 check('אחרי הרשמה לא יישאל שוב',
   (await p2.evaluate(() => localStorage.getItem('lxmPopSeen'))) === '1');
+check('ההרשמה נזכרת גם עבור הסקשן בדף הבית',
+  (await p2.evaluate(() => localStorage.getItem('lxmClubJoined'))) === '1');
 
 await p2.click('[data-pop-copy]');
 await p2.waitForTimeout(200);

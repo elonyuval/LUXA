@@ -109,7 +109,12 @@
 
     <div class="lxm-be-card" data-be>
       <div class="lxm-be-row" style="grid-template-columns:repeat({{ be_count }},minmax(0,1fr));">
-        {%- for n in (1..4) -%}
+        {%- comment -%}
+          Five, not four: the belt is `when 5`, so a loop that stopped at 4 built
+          the whole bundle without it — the product was in the ladder and in the
+          totals but never had a row to tick.
+        {%- endcomment -%}
+        {%- for n in (1..5) -%}
           {%- case n -%}
             {%- when 1 -%}{%- assign bep = be_bag -%}
             {%- when 2 -%}{%- assign bep = be_warmer -%}

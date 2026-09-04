@@ -330,17 +330,21 @@
 </section>
 
 {%- comment -%}
-  Real reviews from across the collection rather than an invitation to leave the
-  first one — the empty state was advertising that the shop has no history.
-{%- endcomment -%}
-{% render 'luxamom-reviews', mode: 'home', per_product: 2 %}
+  Above the reviews on purpose. At the foot of the page it was the last thing
+  after a long scroll and most visitors never reached it; here it sits where
+  someone who has just seen the products and the bundle is still deciding.
 
-{%- comment -%}
   This block used to be a bare <input> and a <button> with no form around them,
   no name attributes and no handler: it promised 10% off and did nothing at all
   when clicked. It is now the real signup.
 {%- endcomment -%}
 {% render 'luxamom-club' %}
+
+{%- comment -%}
+  Real reviews from across the collection rather than an invitation to leave the
+  first one — the empty state was advertising that the shop has no history.
+{%- endcomment -%}
+{% render 'luxamom-reviews', mode: 'home', per_product: 2 %}
 </div>
 
 <script>

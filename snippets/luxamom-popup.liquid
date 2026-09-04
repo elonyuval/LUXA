@@ -23,6 +23,13 @@
   assign pop_code = code | default: 'LUXAMOM10'
   assign pop_percent = percent | default: 10
   assign pop_delay = delay | default: 7
+
+  # A signed-in shopper who already accepted marketing is a subscriber; the shop
+  # already knows, so it should not ask her again.
+  assign pop_known = false
+  if customer and customer.accepts_marketing
+    assign pop_known = true
+  endif
 -%}
 
 {%- unless template.name == 'cart' -%}
@@ -69,7 +76,8 @@
 @media(max-width:420px){ .lxm-pop{padding:14px;} .lxm-pop-box{padding:30px 20px 24px;} .lxm-pop-title{font-size:26px;} }
 </style>
 
-<div class="lxm-pop" data-lxm-pop data-pop-delay="{{ pop_delay }}" hidden>
+<div class="lxm-pop" data-lxm-pop data-pop-delay="{{ pop_delay }}"
+     data-pop-known="{% if pop_known %}true{% else %}false{% endif %}" hidden>
   <div class="lxm-pop-box" role="dialog" aria-modal="true" aria-labelledby="lxm-pop-title">
     <button type="button" class="lxm-pop-close" data-pop-close aria-label="סגירה">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -149,12 +157,28 @@
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
 
+  /* Shared with the club section on the home page, so joining in either place is
+     remembered in both and neither asks twice. */
+  var JOINED = 'lxmClubJoined';
+  function joined(){
+    try { return localStorage.getItem(JOINED) === '1'; } catch (e) { return false; }
+  }
+  function rememberJoined(){
+    try { localStorage.setItem(JOINED, '1'); } catch (e) {}
+  }
+
   var posted = !!pop.querySelector('[data-pop-code]');
+  var known = pop.getAttribute('data-pop-known') === 'true' || joined();
 
   if (posted) {
     // She just signed up: show the code straight away and never ask again.
     remember();
+    rememberJoined();
     open();
+  } else if (known) {
+    // Already a subscriber. Asking again is asking a question the shop can
+    // already answer, so the popup simply does not appear.
+    remember();
   } else if (!seen()) {
     var delay = (parseFloat(pop.getAttribute('data-pop-delay')) || 7) * 1000;
     timer = setTimeout(function(){

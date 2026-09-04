@@ -49,6 +49,7 @@ const render = (posted, extra) => engine.parseAndRender(markup,
 
 const signup = await render(false);
 const done = await render(true);
+const knownHtml = await render(false, { customer: { accepts_marketing: true } });
 
 // ---- the form itself ----
 check('הטופס הוא טופס לקוח של שופיפיי', signup.includes('name="form_type"') && signup.includes('<form'));
@@ -61,7 +62,12 @@ check('לשדה יש תווית לקורא מסך', signup.includes('for="lxm-cl
 
 // ---- the reward ----
 check('אחרי הרשמה מוצג הקוד', done.includes('LUXAMOM10') && done.includes('data-club-code'));
-check('לפני הרשמה הקוד לא נחשף', !signup.includes('LUXAMOM10'));
+/* The code now sits in the markup inside the hidden "already a member" panel.
+   It is a public promo code that goes out in every email, not a secret, so what
+   matters is that it is not shown to someone who has not signed up. */
+check('הקוד לא מוצג למי שלא נרשמה',
+  !signup.split('data-club-already')[0].includes('LUXAMOM10') &&
+  /data-club-already[^>]*hidden/.test(signup));
 check('אחרי הרשמה אין עוד שדה מייל', !done.includes('name="contact[email]"'));
 check('האחוז אחיד בכותרת ובכפתור',
   (signup.match(/10%/g) || []).length >= 2);
@@ -79,9 +85,25 @@ check('דף הבית מרנדר את הסקשן האמיתי', HOME.includes("{%
 check('שרידי הטופס המת הוסרו',
   !HOME.includes('lxm-nform') && !HOME.includes('lxm-newsletter'));
 
-// ---- the copy button, in a browser ----
-writeFileSync(DIR + 'club.html', `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8">
-</head><body>${done}
+/* Above the reviews: at the foot of the page it was the last thing after a long
+   scroll and most visitors never reached it. */
+check('ההרשמה מופיעה לפני הביקורות בדף הבית',
+  HOME.indexOf("{% render 'luxamom-club' %}") < HOME.indexOf("{% render 'luxamom-reviews'"));
+
+// ---- already a member ----
+check('מנוי מזוהה רואה מיד שהוא כבר רשום',
+  knownHtml.includes('data-club-already') && !/data-club-already[^>]*hidden/.test(knownHtml));
+check('ולא מוצג לו הטופס',
+  /data-club-ask[^>]*hidden/.test(knownHtml));
+check('הקוד מוצג לו שוב', knownHtml.includes('LUXAMOM10'));
+check('לא נטען שהקוד כבר נוצל או לא',
+  knownHtml.includes('אם עדיין לא ניצלת'));
+check('למבקרת חדשה מוצג הטופס ולא הודעת "כבר רשומה"',
+  !/data-club-ask[^>]*hidden/.test(signup) && /data-club-already[^>]*hidden/.test(signup));
+
+// ---- in a browser ----
+const shell = (html) => `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8">
+</head><body>${html}
 <script>
   window.__errors = [];
   window.addEventListener('error', function(e){ window.__errors.push(e.message); });
@@ -100,12 +122,38 @@ writeFileSync(DIR + 'club.html', `<!doctype html><html lang="he" dir="rtl"><head
   });
   document.execCommand = function(){ window.__copied = 'via-execCommand'; return true; };
 <\/script>
-<script>${behaviour}<\/script></body></html>`);
+<script>${behaviour}<\/script></body></html>`;
+
+writeFileSync(DIR + 'club.html', shell(done));
+writeFileSync(DIR + 'club-ask.html', shell(signup));
 
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
-const page = await browser.newPage();
+const ctx = await browser.newContext();
+const page = await ctx.newPage();
 const pageErrors = [];
 page.on('pageerror', (e) => pageErrors.push('pageerror: ' + e.message));
+
+/* Signing up has to be remembered, and the signup panel has to give way to the
+   "already a member" one on the next visit — otherwise the shop keeps asking a
+   question it already has the answer to. */
+await page.goto('file://' + DIR + 'club-ask.html');
+await page.waitForTimeout(150);
+check('מבקרת חדשה רואה את הטופס',
+  await page.isVisible('[data-club-ask]') && await page.isHidden('[data-club-already]'));
+
+await page.goto('file://' + DIR + 'club.html');
+await page.waitForTimeout(150);
+check('הרשמה נזכרת',
+  (await page.evaluate(() => localStorage.getItem('lxmClubJoined'))) === '1');
+
+await page.goto('file://' + DIR + 'club-ask.html');
+await page.waitForTimeout(150);
+check('בביקור הבא מוצג "את כבר במשפחה" במקום הטופס',
+  await page.isHidden('[data-club-ask]') && await page.isVisible('[data-club-already]'));
+check('והקוד מוצג לה שוב',
+  (await page.textContent('[data-club-code]')).trim() === 'LUXAMOM10');
+
+await page.evaluate(() => localStorage.clear());
 await page.goto('file://' + DIR + 'club.html');
 await page.waitForTimeout(150);
 
