@@ -6,26 +6,25 @@ const src = readFileSync(new URL('../sections/', import.meta.url).pathname + 'lu
 const style = src.match(/<style>([\s\S]*?)<\/style>/)[1];
 const behaviour = src.match(/<script>([\s\S]*?)<\/script>/)[1];
 
-// The four upsell cards the live theme renders.
-const upsells = [
+/* The drawer is extracted from the section rather than retyped. It used to be
+   hand-built here, which is how this file went on testing a nudge that had been
+   deleted and never saw the discount field that had been added. */
+const drawer =
+  '<div class="lxm-cart-drawer-overlay" data-cart-overlay></div>' +
+  src.slice(src.indexOf('<aside class="lxm-cart-drawer"'), src.indexOf('</aside>') + 8)
+    .replace(/\{%-?\s*comment\s*-?%\}[\s\S]*?\{%-?\s*endcomment\s*-?%\}/g, '')
+    .replace(/\{\{\s*routes\.cart_url\s*\}\}/g, '/cart')
+    .replace(/\{%[\s\S]*?%\}/g, '')
+    .replace(/\{\{[^}]*\}\}/g, '');
+
+/* The upsell list and its nudge were removed from the drawer: the cart shows
+   what is in it. What remains here are the products a cart line can hold. */
+const products = [
   { pid: 8002056126542, vid: 44100000001, name: 'תיק החתלה 3-ב-1 LUXAMOM', price: 34900 },
   { pid: 8016473555022, vid: 44147655180366, name: 'מנשא חיבוק LUXAMOM', price: 16999 },
   { pid: 8002063007822, vid: 44100000002, name: 'מחמם בקבוק אלחוטי נייד LUXAMOM', price: 11900 },
   { pid: 8003086024782, vid: 44100000003, name: 'כרית מגן ראש לתינוק LUXAMOM', price: 9900 }
 ];
-
-const upsellHtml = upsells
-  .map(
-    (u) => `<div class="lxm-cart-upsell-item" data-upsell-product="${u.pid}" data-upsell-variant="${u.vid}" data-upsell-price="${u.price}">
-      <img src="" alt="${u.name}">
-      <div class="lxm-cart-upsell-info">
-        <span class="lxm-cart-upsell-name">${u.name}</span>
-        <span class="lxm-cart-upsell-price">₪${u.price / 100}</span>
-      </div>
-      <button type="button" class="lxm-cart-upsell-add" data-upsell-add>הוספה</button>
-    </div>`
-  )
-  .join('\n');
 
 writeFileSync(
   DIR + '/cart.html',
@@ -45,28 +44,7 @@ writeFileSync(
   <nav class="lxm-mobile-panel"><a href="/">בית</a></nav>
 </header>
 
-<div class="lxm-cart-drawer-overlay" data-cart-overlay></div>
-<aside class="lxm-cart-drawer" data-cart-drawer aria-hidden="true">
-  <div class="lxm-cart-drawer-head">
-    <h3>הסל שלך</h3>
-    <button type="button" class="lxm-cart-drawer-close" data-cart-close aria-label="סגירה">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-  </div>
-  <div class="lxm-cart-drawer-body" data-cart-body><p class="lxm-cart-empty">הסל שלך ריק</p></div>
-  <div class="lxm-cart-drawer-foot" data-cart-foot style="display:none;">
-    <div class="lxm-cart-upsell" data-cart-upsell>
-      <p class="lxm-cart-nudge" data-cart-nudge style="display:none;"></p>
-      <p class="lxm-cart-upsell-title">להשלים את הסט</p>
-      ${upsellHtml}
-    </div>
-    <div class="lxm-cart-saving-row" data-cart-saving style="display:none;">
-      <span>חסכת בבאנדל</span><span class="lxm-cart-saving-amount" data-cart-saving-amount>₪0</span>
-    </div>
-    <div class="lxm-cart-subtotal-row"><span>סכום ביניים</span><span class="lxm-cart-subtotal-amount" data-cart-subtotal>₪0</span></div>
-    <a href="/cart" class="lxm-cart-checkout-btn" data-cart-checkout>מעבר לתשלום</a>
-  </div>
-</aside>
+${drawer}
 
 <script>
   window.__errors = [];
@@ -116,13 +94,13 @@ const check = async (label, fn) => {
 const setCart = (cart) => page.evaluate((c) => { window.__cart = c; }, cart);
 
 const line = (i, over = {}) => ({
-  id: upsells[i].vid,
-  key: upsells[i].vid + ':k' + i,
-  product_id: upsells[i].pid,
-  product_title: upsells[i].name,
+  id: products[i].vid,
+  key: products[i].vid + ':k' + i,
+  product_id: products[i].pid,
+  product_title: products[i].name,
   variant_title: 'מנומר ירוק',
   quantity: 1,
-  final_line_price: upsells[i].price,
+  final_line_price: products[i].price,
   image: null,
   ...over
 });
@@ -144,10 +122,6 @@ await page.click('[data-cart-toggle]');
 await page.waitForTimeout(150);
 await check('one item renders without errors', async () => (await errs()).length === 0);
 await check('subtotal keeps agorot', async () => (await page.textContent('[data-cart-subtotal]')) === '₪169.99');
-await check('nudge offers the next tier', async () => {
-  const t = await page.textContent('[data-cart-nudge]');
-  return t.includes('10%');
-});
 
 // 3 — two items with an automatic discount
 await setCart({
@@ -180,17 +154,6 @@ await page.click('[data-line-remove] >> nth=0');
 await page.waitForTimeout(150);
 await check('removing a line raises no error', async () => (await errs()).length === 0);
 
-// 5 — upsell add
-await setCart({ item_count: 1, items: [line(1)], total_price: 16999, total_discount: 0, original_total_price: 16999 });
-await page.evaluate(() => window.LXMCart.close());
-await page.evaluate(() => window.LXMCart.close());
-await page.click('[data-cart-toggle]');
-await page.waitForTimeout(150);
-await clearErrs();
-await page.click('[data-upsell-add] >> nth=0');
-await page.waitForTimeout(200);
-await check('upsell add raises no error', async () => (await errs()).length === 0);
-
 // 6 — a line with no image and no variant title (real for single-variant products)
 await setCart({
   item_count: 1,
@@ -206,7 +169,7 @@ await page.click('[data-cart-toggle]');
 await page.waitForTimeout(150);
 await check('line without image or variant title renders', async () => (await errs()).length === 0);
 
-// 7 — every product already in the cart, so no upsell is left
+// 7 — a full cart
 await setCart({
   item_count: 4,
   items: [line(0), line(1), line(2), line(3)],
@@ -219,8 +182,16 @@ await page.evaluate(() => window.LXMCart.close());
 await page.evaluate(() => window.LXMCart.close());
 await page.click('[data-cart-toggle]');
 await page.waitForTimeout(150);
-await check('full cart with no upsells left renders', async () => (await errs()).length === 0);
-await check('nudge hidden at the top tier', async () => await page.isHidden('[data-cart-nudge]'));
+await check('full cart renders', async () => (await errs()).length === 0);
+/* isHidden() on an element that does not exist returns true, so asserting the
+   nudge is hidden would pass whether or not the drawer still sold to her. This
+   reads the section instead. */
+await check('הסל לא מוכר: אין רשימת השלמה ואין באנר דחיפה', async () => {
+  const src = readFileSync(new URL('../sections/luxamom-header.liquid', import.meta.url).pathname, 'utf8');
+  return !src.includes('data-cart-upsell') && !src.includes('data-cart-nudge') &&
+         !src.includes('data-upsell-add');
+});
+await check('אבל שדה קוד ההנחה נשאר', async () => await page.isVisible('[data-cart-code-input]'));
 
 // 8 — repeated clicks on the cart icon, the way a frustrated shopper does
 await clearErrs();
