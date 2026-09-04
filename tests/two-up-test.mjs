@@ -70,8 +70,15 @@ check('מוצר בלי צבעים לא מציג בורר', !single.includes('dat
 check('LXMCart יודע להוסיף שני פריטים בבקשה אחת', HEADER.includes('addItems: function(items)'));
 check('addItem עדיין קיים ועובר דרכו', HEADER.includes('return window.LXMCart.addItems('));
 
-// every product page renders it
-for (const f of ['belt', 'sling', 'bag', 'cushion', 'warmer']) {
+const SLING = readFileSync(new URL('../sections/luxamom-product-sling.liquid', import.meta.url).pathname, 'utf8');
+check('המנשא לא מקבל הצעה כפולה',
+  !SLING.includes('luxamom-two-up') && SLING.includes('כמה לוקחים?'));
+
+/* The sling is excluded on purpose: it has its own pair offer backed by a real
+   automatic discount ("מנשא חיבוק — 2 במחיר ₪249.99"), which is a deeper deal
+   than the generic 10%. Two competing two-unit offers on one page is worse than
+   either alone. */
+for (const f of ['belt', 'bag', 'cushion', 'warmer']) {
   const s = readFileSync(new URL(`../sections/luxamom-product-${f}.liquid`, import.meta.url).pathname, 'utf8');
   check(`${f}: מרנדר את ההצעה עם סיבה`, /render 'luxamom-two-up', reason: '[^']+'/.test(s));
   check(`${f}: ההצעה יושבת מעל כפתור ההוספה`,
@@ -86,7 +93,12 @@ writeFileSync(DIR + 'two-up.html', `<!doctype html><html lang="he" dir="rtl"><he
   <script type="application/json" data-lxm-variants>${JSON.stringify(
     VARIANTS.map((v) => ({ id: v.id, price: v.price })))}<\/script>
   ${html}
-  <button type="submit" data-add-btn><span data-add-label>הוספה לסל</span></button>
+  <!-- The behaviour script sits inline, exactly where the snippet renders it:
+       ABOVE the add-to-cart button. Hoisting it to the end of the body would
+       hide the very bug this covers — at parse time the button does not exist
+       yet, so looking it up synchronously returns null. -->
+  <script>${behaviour}<\/script>
+  <button type="submit" data-add-btn><span data-add-label>הוספה לסל</span> — <span data-price-inline>₪99.99</span></button>
 </form>
 <script>
   window.__errors = [];
@@ -110,7 +122,7 @@ writeFileSync(DIR + 'two-up.html', `<!doctype html><html lang="he" dir="rtl"><he
     window.LXMCart.addItem(document.querySelector('[data-variant-id-input]').value, 1);
   });
 <\/script>
-<script>${behaviour}<\/script></body></html>`);
+</body></html>`);
 
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
 const page = await browser.newPage({ viewport: { width: 480, height: 900 } });
@@ -140,6 +152,11 @@ check('הצבע השני מתחיל זהה לראשון',
   (await page.inputValue('[data-tu-second]')) === '111');
 check('תווית הכפתור משתנה',
   (await page.textContent('[data-add-label]')) === 'הוספת שתיים לסל');
+/* The button must quote the two-unit price. A button still showing the single
+   price beside a ticked offer reads as a mistake, and the shopper cannot tell
+   which number she is about to be charged. */
+check('מחיר הכפתור עובר למחיר של שתיים',
+  (await page.textContent('[data-price-inline]')) === '₪179.98');
 
 await page.click('[data-add-btn]');
 await page.waitForTimeout(150);
@@ -185,6 +202,8 @@ await page.click('.lxm-tu-head');
 await page.waitForTimeout(150);
 check('ביטול הסימון מחזיר את תווית הכפתור',
   (await page.textContent('[data-add-label]')) === 'הוספה לסל');
+check('וגם את המחיר ליחידה אחת',
+  (await page.textContent('[data-price-inline]')) === '₪99.99');
 await reset();
 await page.click('[data-add-btn]');
 await page.waitForTimeout(150);

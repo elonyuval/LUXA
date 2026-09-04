@@ -106,7 +106,14 @@
 
 <script>
 (function(){
-  var root = document.currentScript.closest('.lxm-pdp-form') || document;
+  /* This block sits above the add-to-cart button, so at parse time that button
+     does not exist yet and looking it up here returns null — which is why the
+     button's label and price went on saying "one" while the box was ticked.
+     currentScript has to be captured now; everything else waits for the DOM. */
+  var me = document.currentScript;
+
+  function init(){
+  var root = (me && me.closest('.lxm-pdp-form')) || document;
   var tu = root.querySelector('[data-two-up]');
   if (!tu) return;
 
@@ -116,6 +123,7 @@
   var variantInput = root.querySelector('[data-variant-id-input]');
   var addLabel = root.querySelector('[data-add-label]');
   var addLabelText = addLabel ? addLabel.textContent : '';
+  var priceInline = root.querySelector('[data-price-inline]');
 
   var unit = parseInt(tu.getAttribute('data-unit'), 10) || 0;
   var rate = (parseFloat(tu.getAttribute('data-rate')) || 0) / 100;
@@ -147,11 +155,16 @@
 
   function refresh(){
     var current = variantInput ? variantInput.value : '';
-    var full = priceOf(current) * 2;
+    var one = priceOf(current);
+    var full = one * 2;
     var two = Math.round(full * (1 - rate));
     if (fullEl) fullEl.textContent = money(full);
     if (twoEl) twoEl.textContent = money(two);
     if (saveEl) saveEl.textContent = money(full - two);
+    // The button has to agree with the box above it: a button still quoting the
+    // single price next to a ticked two-unit offer reads as a mistake, and the
+    // shopper cannot tell which number she is about to be charged.
+    if (priceInline) priceInline.textContent = money(toggle.checked ? two : one);
     // Keep the second unit on the same choice until she says otherwise.
     if (second && !second.dataset.touched && current) second.value = current;
   }
@@ -203,6 +216,13 @@
         }
       });
     }, true);
+  }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
   }
 })();
 </script>
