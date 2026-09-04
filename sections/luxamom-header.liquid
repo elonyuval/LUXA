@@ -709,11 +709,15 @@
     open: function(){ openDrawer(); showLoading(); return refresh(); },
     close: closeDrawer,
     addItem: function(variantId, qty){
-      qty = qty || 1;
+      return window.LXMCart.addItems([{ id: variantId, quantity: qty || 1 }]);
+    },
+    // Two lines in one request rather than two: a second round trip can half-fail
+    // and leave the cart holding one of the two the shopper asked for.
+    addItems: function(items){
       var pending = fetch('/cart/add.js', {
         method: 'POST',
         headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
-        body: JSON.stringify({ items: [{ id: variantId, quantity: qty }] })
+        body: JSON.stringify({ items: items })
       }).then(function(r){
         return readJson(r).then(function(j){
           // Only a genuine add failure may reject. Callers treat a rejection as

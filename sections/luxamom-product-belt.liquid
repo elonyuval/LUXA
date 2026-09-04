@@ -318,6 +318,7 @@
         </div>
 
         <div class="lxm-cta">
+          {% render 'luxamom-two-up', reason: 'אחד לכל רכב', label: 'הצבע השני' %}
           <button type="submit" class="lxm-btn lxm-btn-primary" data-add-btn><span data-add-label>הוספה לסל</span> — <span data-price-inline>{{ current_variant.price | money_without_trailing_zeros }}</span></button>
           <p class="lxm-add-error" data-add-error hidden></p>
           <p class="lxm-cta-note">משלוח חינם תמיד (5-17 ימי עסק) · 30 יום להחזרה מכל סיבה</p>

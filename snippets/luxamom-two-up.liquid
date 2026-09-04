@@ -1,0 +1,209 @@
+{%- comment -%}
+  The second-unit offer, in the buy box.
+
+  Most shoppers arrive from an ad for one specific product, so the five-product
+  bundle builder asks them to consider four things they did not come for. This
+  asks one question instead, about the product they already want, at the moment
+  they are deciding.
+
+  The 10% is not a new discount: the shop's automatic discount is
+  `quantity >= 2` across these five products, so two units of the same product
+  already qualify. Nothing here creates a price the cart will not honour.
+
+  A second unit needs a reason or it reads as a trick, so `reason` is required
+  and is written per product. Where the product has more than one option value,
+  the second unit can be a different one — two colours is variety, not buying
+  the same thing twice.
+
+  Required:
+    reason  — why a second one is useful ("אחד לכל רכב")
+  Optional:
+    rate    — discount percent at two units (default 10)
+    label   — wording for the second-unit picker (default 'הצבע השני')
+{%- endcomment -%}
+
+{%- liquid
+  assign tu_rate = rate | default: 10
+  assign tu_label = label | default: 'הצבע השני'
+  assign tu_unit = product.selected_or_first_available_variant.price | default: product.price
+  assign tu_full = tu_unit | times: 2
+  assign tu_keep = 100 | minus: tu_rate | times: 0.01
+  assign tu_two = tu_full | times: tu_keep | round
+  assign tu_save = tu_full | minus: tu_two
+
+  assign tu_values = product.options_with_values[0].values
+  assign tu_option = product.options_with_values[0].name
+-%}
+
+{%- if product != blank and reason != blank and product.available -%}
+<style>
+.lxm-tu{border:1.5px solid rgba(139,112,96,.28);border-radius:16px;padding:14px 16px;margin:0 0 16px;
+  background:#FBF8F4;font-family:'Assistant','Segoe UI',sans-serif;direction:rtl;color:#3a2f28;}
+.lxm-tu.lxm-tu-on{border-color:#8B7060;background:#F3ECE3;}
+.lxm-tu *{box-sizing:border-box;}
+.lxm-tu-head{display:flex;align-items:flex-start;gap:11px;cursor:pointer;margin:0;}
+.lxm-tu-box{flex:0 0 auto;width:21px;height:21px;border-radius:6px;border:1.5px solid rgba(139,112,96,.5);
+  background:#fff;display:flex;align-items:center;justify-content:center;margin-top:2px;}
+.lxm-tu-box svg{width:13px;height:13px;opacity:0;}
+.lxm-tu-on .lxm-tu-box{background:#8B7060;border-color:#8B7060;}
+.lxm-tu-on .lxm-tu-box svg{opacity:1;}
+.lxm-tu input[type="checkbox"]{position:absolute;opacity:0;width:0;height:0;}
+.lxm-tu input[type="checkbox"]:focus-visible + .lxm-tu-box{outline:2px solid #8B7060;outline-offset:2px;}
+.lxm-tu-text{flex:1;min-width:0;}
+.lxm-tu-title{font-size:15.5px;font-weight:700;color:#4a3b30;margin:0;}
+.lxm-tu-prices{font-size:14px;margin:3px 0 0;opacity:.9;}
+.lxm-tu-was{text-decoration:line-through;opacity:.55;margin-inline-start:6px;}
+.lxm-tu-save{color:#8a4a4d;font-weight:700;}
+.lxm-tu-num{direction:ltr;unicode-bidi:isolate;}
+.lxm-tu-pick{margin:13px 0 0;display:none;align-items:center;gap:9px;}
+.lxm-tu-on .lxm-tu-pick{display:flex;}
+.lxm-tu-pick label{font-size:14px;font-weight:600;white-space:nowrap;}
+.lxm-tu-pick select{flex:1;min-width:0;border:1px solid rgba(139,112,96,.35);border-radius:10px;background:#fff;
+  padding:10px 11px;font:inherit;font-size:14.5px;color:#4a3b30;}
+/* Its own, because three of the five pages have no error element of their own
+   and a failed add must never be silent. */
+.lxm-tu-err{margin:11px 0 0;font-size:14px;color:#a3402f;}
+.lxm-tu-err[hidden]{display:none;}
+</style>
+
+<div class="lxm-tu" data-two-up
+     data-unit="{{ tu_unit }}" data-rate="{{ tu_rate }}">
+  <label class="lxm-tu-head">
+    <input type="checkbox" data-tu-toggle>
+    <span class="lxm-tu-box" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2"><path d="M20 6L9 17l-5-5"/></svg>
+    </span>
+    <span class="lxm-tu-text">
+      <span class="lxm-tu-title">קחי שתיים — {{ reason }}</span>
+      <span class="lxm-tu-prices">
+        <span class="lxm-tu-num" data-tu-two>{{ tu_two | money_without_trailing_zeros }}</span>
+        <span class="lxm-tu-was lxm-tu-num" data-tu-full>{{ tu_full | money_without_trailing_zeros }}</span>
+        ·
+        <span class="lxm-tu-save">חוסכת <span class="lxm-tu-num" data-tu-save>{{ tu_save | money_without_trailing_zeros }}</span></span>
+      </span>
+    </span>
+  </label>
+
+  {%- if tu_values.size > 1 -%}
+    <div class="lxm-tu-pick">
+      <label for="lxm-tu-second">{{ tu_label }}</label>
+      {%- comment -%}
+        Defaults to whatever she already picked, so taking two never forces a
+        second decision — it only offers one.
+      {%- endcomment -%}
+      <select id="lxm-tu-second" data-tu-second>
+        {%- for v in product.variants -%}
+          {%- if v.available -%}
+            <option value="{{ v.id }}">{{ v.title }}</option>
+          {%- endif -%}
+        {%- endfor -%}
+      </select>
+    </div>
+  {%- endif -%}
+
+  <p class="lxm-tu-err" data-tu-error role="alert" hidden></p>
+</div>
+
+<script>
+(function(){
+  var root = document.currentScript.closest('.lxm-pdp-form') || document;
+  var tu = root.querySelector('[data-two-up]');
+  if (!tu) return;
+
+  var toggle = tu.querySelector('[data-tu-toggle]');
+  var second = tu.querySelector('[data-tu-second]');
+  var form = tu.closest('form');
+  var variantInput = root.querySelector('[data-variant-id-input]');
+  var addLabel = root.querySelector('[data-add-label]');
+  var addLabelText = addLabel ? addLabel.textContent : '';
+
+  var unit = parseInt(tu.getAttribute('data-unit'), 10) || 0;
+  var rate = (parseFloat(tu.getAttribute('data-rate')) || 0) / 100;
+  var twoEl = tu.querySelector('[data-tu-two]');
+  var fullEl = tu.querySelector('[data-tu-full]');
+  var saveEl = tu.querySelector('[data-tu-save]');
+
+  function money(cents){
+    var value = Math.round(cents) / 100;
+    var fraction = Math.round(value * 100) % 100 === 0 ? 0 : 2;
+    return '₪' + value.toLocaleString('he-IL', { minimumFractionDigits: fraction, maximumFractionDigits: 2 });
+  }
+
+  /* The prices are recomputed from the variant actually selected: on a product
+     whose colours are not all the same price, a figure baked in at render time
+     would stop being true the moment she switched. */
+  function priceOf(id){
+    var data = root.querySelector('[data-lxm-variants]');
+    if (data) {
+      try {
+        var list = JSON.parse(data.textContent);
+        for (var i = 0; i < list.length; i++) {
+          if (String(list[i].id) === String(id) && typeof list[i].price === 'number') return list[i].price;
+        }
+      } catch (e) {}
+    }
+    return unit;
+  }
+
+  function refresh(){
+    var current = variantInput ? variantInput.value : '';
+    var full = priceOf(current) * 2;
+    var two = Math.round(full * (1 - rate));
+    if (fullEl) fullEl.textContent = money(full);
+    if (twoEl) twoEl.textContent = money(two);
+    if (saveEl) saveEl.textContent = money(full - two);
+    // Keep the second unit on the same choice until she says otherwise.
+    if (second && !second.dataset.touched && current) second.value = current;
+  }
+
+  if (second) second.addEventListener('change', function(){ second.dataset.touched = '1'; });
+
+  toggle.addEventListener('change', function(){
+    tu.classList.toggle('lxm-tu-on', toggle.checked);
+    if (addLabel) addLabel.textContent = toggle.checked ? 'הוספת שתיים לסל' : addLabelText;
+    refresh();
+  });
+
+  // The variant picker lives in the section's own script; watching the input it
+  // keeps in sync avoids reaching into it.
+  if (variantInput && window.MutationObserver) {
+    new MutationObserver(refresh).observe(variantInput, { attributes: true, attributeFilter: ['value'] });
+  }
+  if (form) form.addEventListener('change', refresh);
+  refresh();
+
+  /* Capture phase, so this runs before the section's own submit handler and can
+     take over cleanly. Without the toggle it does nothing and the section
+     behaves exactly as before. */
+  if (form) {
+    form.addEventListener('submit', function(e){
+      if (!toggle.checked || !window.LXMCart || !variantInput) return;
+      var first = variantInput.value;
+      if (!first) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      var secondId = second && second.value ? second.value : first;
+      var items = String(secondId) === String(first)
+        ? [{ id: first, quantity: 2 }]
+        : [{ id: first, quantity: 1 }, { id: secondId, quantity: 1 }];
+
+      var btn = root.querySelector('[data-add-btn]');
+      var err = tu.querySelector('[data-tu-error]');
+      if (btn) btn.disabled = true;
+      if (err) { err.textContent = ''; err.hidden = true; }
+
+      window.LXMCart.addItems(items).then(function(){
+        if (btn) btn.disabled = false;
+      }).catch(function(error){
+        if (btn) btn.disabled = false;
+        if (err) {
+          err.textContent = (error && error.message !== 'add failed' && error.message) || 'לא הצלחנו להוסיף לסל. נסי שוב.';
+          err.hidden = false;
+        }
+      });
+    }, true);
+  }
+})();
+</script>
+{%- endif -%}
