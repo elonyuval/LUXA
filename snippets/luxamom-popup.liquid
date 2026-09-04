@@ -149,11 +149,16 @@
     if (first) first.focus();
   }
 
+  /* ?lxmpop=1 forces the popup open and stops it recording anything, so it can
+     be looked at repeatedly without clearing storage or opening a private
+     window — which is most of what checking a popup on a phone involves. */
+  var preview = /[?&]lxmpop=1(&|$)/.test(location.search);
+
   function close(){
     pop.classList.remove('lxm-pop-open');
     pop.hidden = true;
     document.body.style.overflow = '';
-    remember();
+    if (!preview) remember();
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
 
@@ -170,10 +175,12 @@
   var posted = !!pop.querySelector('[data-pop-code]');
   var known = pop.getAttribute('data-pop-known') === 'true' || joined();
 
-  if (posted) {
+  if (preview && !posted) {
+    // Straight to the point: no delay, nothing remembered, nothing skipped.
+    open();
+  } else if (posted) {
     // She just signed up: show the code straight away and never ask again.
-    remember();
-    rememberJoined();
+    if (!preview) { remember(); rememberJoined(); }
     open();
   } else if (known) {
     // Already a subscriber. Asking again is asking a question the shop can

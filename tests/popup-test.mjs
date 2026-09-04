@@ -162,6 +162,33 @@ await p.reload();
 await p.waitForTimeout(700);
 check('מי שכבר נרשמה לא נשאלת שוב', !(await open()));
 
+/* ?lxmpop=1 is the preview switch: it must show the popup whatever the browser
+   remembers, and must leave no trace, or checking it twice would need the
+   storage cleared in between. */
+await p.evaluate(() => { localStorage.clear(); localStorage.setItem('lxmPopSeen', '1'); });
+await p.goto('file://' + DIR + 'popup-ask.html?lxmpop=1');
+await p.waitForTimeout(200);
+check('lxmpop=1 מציג את הבאנר גם למי שסגרה אותו', await open());
+check('ובלי להמתין להשהיה', await open());
+await p.click('[data-pop-close] >> nth=0');
+await p.waitForTimeout(150);
+check('סגירה במצב בדיקה לא נרשמת',
+  (await p.evaluate(() => localStorage.getItem('lxmPopSeen'))) === '1');
+await p.goto('file://' + DIR + 'popup-ask.html?lxmpop=1');
+await p.waitForTimeout(200);
+check('אפשר לבדוק שוב ושוב', await open());
+
+await p.evaluate(() => { localStorage.clear(); localStorage.setItem('lxmClubJoined', '1'); });
+await p.goto('file://' + DIR + 'popup-ask.html?lxmpop=1');
+await p.waitForTimeout(200);
+check('מצב הבדיקה גובר גם על "כבר נרשמה"', await open());
+
+// and a normal visit is unaffected
+await p.evaluate(() => localStorage.clear());
+await p.goto('file://' + DIR + 'popup-ask.html');
+await p.waitForTimeout(120);
+check('בביקור רגיל אין קפיצה מיידית', !(await open()));
+
 const knownHtml = await render({ delay: 0.3, customer: { accepts_marketing: true } });
 check('מנוי מזוהה מסומן כידוע כבר בשרת', knownHtml.includes('data-pop-known="true"'));
 check('מבקרת אנונימית לא מסומנת ככזו', askHtml.includes('data-pop-known="false"'));
