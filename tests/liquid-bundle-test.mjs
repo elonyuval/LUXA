@@ -67,6 +67,12 @@ check('כל חמשת המוצרים מקבלים שורה', rows(full) === 5, 'g
 check('מגן בטן נמצא בבאנדל', names(full).some((n) => n.includes('מגן בטן')), names(full).join(' | '));
 check('אין מוצר כפול', new Set(names(full)).size === names(full).length);
 
+// The order is a merchandising decision, not an accident of the case block.
+check('הסדר: מגן בטן, מנשא, מחמם, כרית, תיק',
+  names(full).join(' | ') === [
+    'מגן בטן', 'מנשא חיבוק', 'מחמם בקבוק אלחוטי נייד', 'כרית מגן ראש לתינוק', 'תיק החתלה 3-ב-1'
+  ].join(' | '), names(full).join(' | '));
+
 /* The grid is laid out from be_count, so a mismatch between the count and the
    rows leaves either an empty column or a squashed one. */
 check('רוחב הגריד תואם למספר השורות', full.includes('repeat(5,minmax(0,1fr))'));
