@@ -118,6 +118,11 @@
 .lxm-cart-code-row{display:flex;gap:8px;align-items:stretch;}
 .lxm-cart-code-input{flex:1 1 auto;min-width:0;border:1px solid rgba(139,112,96,.35);border-radius:10px;
   padding:11px 12px;font:inherit;font-size:14px;color:#4a3b30;background:#fff;text-align:start;}
+/* iOS Safari zooms the whole page in when a focused field is under 16px.
+   Scoped to touch so the desktop sizing is untouched, and larger controls are
+   the right call on a phone anyway. */
+@media (pointer: coarse){ .lxm-cart-code-input{font-size:16px;} }
+
 .lxm-cart-code-input:focus{outline:2px solid #8B7060;outline-offset:1px;}
 .lxm-cart-code-btn{flex:0 0 auto;border:none;border-radius:10px;background:#4a3b30;color:#fff;font:inherit;
   font-size:14px;font-weight:600;padding:11px 18px;cursor:pointer;}

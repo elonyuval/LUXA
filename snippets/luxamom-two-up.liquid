@@ -60,6 +60,11 @@
 .lxm-tu-pick label{font-size:14px;font-weight:600;white-space:nowrap;}
 .lxm-tu-pick select{flex:1;min-width:0;border:1px solid rgba(139,112,96,.35);border-radius:10px;background:#fff;
   padding:10px 11px;font:inherit;font-size:14.5px;color:#4a3b30;}
+/* iOS Safari zooms the whole page in when a focused field is under 16px.
+   Scoped to touch so the desktop sizing is untouched, and larger controls are
+   the right call on a phone anyway. */
+@media (pointer: coarse){ .lxm-tu-pick select{font-size:16px;} }
+
 /* Its own, because three of the five pages have no error element of their own
    and a failed add must never be silent. */
 .lxm-tu-err{margin:11px 0 0;font-size:14px;color:#a3402f;}

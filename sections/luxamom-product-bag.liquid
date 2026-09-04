@@ -143,6 +143,11 @@
   padding:14px 18px;border-radius:16px;border:1.5px solid rgba(139,112,96,.22);
   background:var(--cream); color:var(--ink); font-family:'Assistant',sans-serif; font-size:15px; resize:vertical;
 }
+/* iOS Safari zooms the whole page in when a focused field is under 16px.
+   Scoped to touch so the desktop sizing is untouched, and larger controls are
+   the right call on a phone anyway. */
+@media (pointer: coarse){ .lxm-review-fields input,.lxm-review-fields textarea{font-size:16px;} }
+
 .lxm-review-fields input::placeholder,.lxm-review-fields textarea::placeholder{color:rgba(58,47,40,.45);}
 .lxm-review-form-wrap .lxm-btn{margin-top:18px;}
 .lxm-review-form-note{margin-top:12px;font-size:12.5px;text-align:center;opacity:.55;}
