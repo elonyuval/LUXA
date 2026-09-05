@@ -94,7 +94,22 @@
 .lxm-cart-line-qty span{min-width:16px;text-align:center;font-size:14px;}
 .lxm-cart-line-price{font-family:'Frank Ruhl',serif;font-weight:700;color:#6b5646;white-space:nowrap;direction:ltr;unicode-bidi:isolate;}
 .lxm-cart-line-remove{font-size:12px;opacity:.5;text-decoration:underline;cursor:pointer;background:none;border:none;padding:0;margin-top:2px;color:#4a3b30;align-self:flex-start;}
-.lxm-cart-empty{text-align:center;padding:60px 20px;opacity:.6;font-size:15px;}
+.lxm-cart-empty{text-align:center;padding:36px 20px 4px;opacity:.6;font-size:15px;}
+/* Empty-state shelf. Deliberately quieter than a product card: it is a way out
+   of an empty cart, not a second storefront. */
+.lxm-cart-sugg-title{font-size:13px;font-weight:700;color:#6b5646;letter-spacing:.04em;text-align:center;
+  margin:18px 0 14px;padding-top:18px;border-top:1px solid rgba(139,112,96,.15);}
+.lxm-cart-sugg{display:flex;align-items:center;gap:12px;padding:9px 0;}
+.lxm-cart-sugg img{width:54px;height:54px;border-radius:11px;object-fit:cover;background:#F3ECE3;flex:none;}
+.lxm-cart-sugg-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.lxm-cart-sugg-name{font-size:14px;font-weight:600;color:#4a3b30;text-decoration:none;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lxm-cart-sugg-name:hover{text-decoration:underline;}
+.lxm-cart-sugg-price{font-size:13px;opacity:.65;direction:ltr;unicode-bidi:isolate;}
+.lxm-cart-sugg-add{flex:none;background:none;border:1.5px solid #8B7060;color:#8B7060;border-radius:999px;
+  padding:7px 17px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.lxm-cart-sugg-add:hover{background:#8B7060;color:#fff;}
+.lxm-cart-sugg-add[disabled]{opacity:.5;cursor:default;}
 .lxm-cart-loading{text-align:center;padding:60px 20px;opacity:.55;font-size:15px;}
 /* Shown instead of a silent failure, so a dropped request never looks like an
    empty cart. */
@@ -225,6 +240,39 @@
   <div class="lxm-cart-drawer-body" data-cart-body>
     <p class="lxm-cart-empty">הסל שלך ריק</p>
   </div>
+
+  {%- comment -%}
+    Products for the empty state only. An empty drawer is the one moment in the
+    cart where there is nothing to interrupt: she has not decided anything yet,
+    so offering the shelf is help rather than pressure. The moment a line exists
+    this list is gone and the cart is just a cart again.
+  {%- endcomment -%}
+  <script type="application/json" data-cart-products>
+    [
+      {%- assign sep = '' -%}
+      {%- for n in (1..5) -%}
+        {%- case n -%}
+          {%- when 1 -%}{%- assign cp = nav_belt -%}
+          {%- when 2 -%}{%- assign cp = nav_sling -%}
+          {%- when 3 -%}{%- assign cp = nav_warmer -%}
+          {%- when 4 -%}{%- assign cp = nav_cushion -%}
+          {%- when 5 -%}{%- assign cp = nav_bag -%}
+        {%- endcase -%}
+        {%- if cp != blank and cp.available -%}
+          {%- assign cpv = cp.selected_or_first_available_variant -%}
+          {{ sep }}{
+            "id": {{ cpv.id | json }},
+            "title": {{ cp.title | remove: ' LUXAMOM' | json }},
+            "price": {{ cpv.price | json }},
+            "priceText": {{ cpv.price | money_without_trailing_zeros | json }},
+            "image": {{ cp.featured_image | image_url: width: 160 | json }},
+            "url": {{ cp.url | json }}
+          }
+          {%- assign sep = ',' -%}
+        {%- endif -%}
+      {%- endfor -%}
+    ]
+  </script>
   <div class="lxm-cart-drawer-foot" data-cart-foot style="display:none;">
     {%- comment -%}
       The cart shows what is in it. The four-product "complete the set" list and
@@ -434,6 +482,51 @@
     if (e.key === 'Enter') { e.preventDefault(); submitCode(); }
   });
 
+  /* ---- the empty state ----
+     Rendered only when the cart has no lines. As soon as one exists the cart
+     goes back to being a plain list of what is in it. */
+  var suggestions = (function(){
+    var el = document.querySelector('[data-cart-products]');
+    if (!el) return [];
+    try { return JSON.parse(el.textContent) || []; } catch (e) { return []; }
+  })();
+
+  function suggestionsHtml(){
+    if (!suggestions.length) return '';
+    return '<p class="lxm-cart-sugg-title">אולי בשביל זה באת</p>' +
+      suggestions.map(function(p){
+        return '<div class="lxm-cart-sugg" data-sugg-variant="' + esc(p.id) + '">' +
+          '<a href="' + esc(p.url) + '" tabindex="-1" aria-hidden="true">' +
+            '<img src="' + esc(p.image) + '" alt="" loading="lazy"></a>' +
+          '<span class="lxm-cart-sugg-info">' +
+            '<a class="lxm-cart-sugg-name" href="' + esc(p.url) + '">' + esc(p.title) + '</a>' +
+            '<span class="lxm-cart-sugg-price">' + esc(p.priceText) + '</span>' +
+          '</span>' +
+          '<button type="button" class="lxm-cart-sugg-add" data-sugg-add>הוספה</button>' +
+        '</div>';
+      }).join('');
+  }
+
+  function wireSuggestions(){
+    if (!body) return;
+    body.querySelectorAll('[data-sugg-add]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var row = btn.closest('[data-sugg-variant]');
+        var variantId = row && row.getAttribute('data-sugg-variant');
+        if (!variantId) return;
+        btn.disabled = true;
+        btn.textContent = '…';
+        // renderCart replaces this whole list on success, so the button only has
+        // to be put back when the add failed and the row survives.
+        window.LXMCart.addItem(variantId, 1).catch(function(){
+          btn.disabled = false;
+          btn.textContent = 'הוספה';
+          showNote('לא הצלחנו להוסיף את הפריט. נסי שוב.');
+        });
+      });
+    });
+  }
+
   function showLoading(){
     if (!body) return;
     body.innerHTML = '<p class="lxm-cart-loading">רגע, טוענים את הסל…</p>';
@@ -473,7 +566,8 @@
     renderCodes(cart);
     var countEls = document.querySelectorAll('[data-cart-count]');
     if (!cart.items.length) {
-      body.innerHTML = '<p class="lxm-cart-empty">הסל שלך ריק</p>';
+      body.innerHTML = '<p class="lxm-cart-empty">הסל שלך ריק</p>' + suggestionsHtml();
+      wireSuggestions();
       if (foot) foot.style.display = 'none';
     } else {
       body.innerHTML = cart.items.map(function(item){

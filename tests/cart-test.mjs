@@ -6,6 +6,15 @@ const src = readFileSync(new URL('../sections/', import.meta.url).pathname + 'lu
 const style = src.match(/<style>([\s\S]*?)<\/style>/)[1];
 const behaviour = src.match(/<script>([\s\S]*?)<\/script>/)[1];
 
+/* The upsell list and its nudge were removed from the drawer: the cart shows
+   what is in it. What remains here are the products a cart line can hold. */
+const products = [
+  { pid: 8002056126542, vid: 44100000001, name: 'תיק החתלה 3-ב-1 LUXAMOM', price: 34900 },
+  { pid: 8016473555022, vid: 44147655180366, name: 'מנשא חיבוק LUXAMOM', price: 16999 },
+  { pid: 8002063007822, vid: 44100000002, name: 'מחמם בקבוק אלחוטי נייד LUXAMOM', price: 11900 },
+  { pid: 8003086024782, vid: 44100000003, name: 'כרית מגן ראש לתינוק LUXAMOM', price: 9900 }
+];
+
 /* The drawer is extracted from the section rather than retyped. It used to be
    hand-built here, which is how this file went on testing a nudge that had been
    deleted and never saw the discount field that had been added. */
@@ -15,16 +24,16 @@ const drawer =
     .replace(/\{%-?\s*comment\s*-?%\}[\s\S]*?\{%-?\s*endcomment\s*-?%\}/g, '')
     .replace(/\{\{\s*routes\.cart_url\s*\}\}/g, '/cart')
     .replace(/\{%[\s\S]*?%\}/g, '')
-    .replace(/\{\{[^}]*\}\}/g, '');
+    .replace(/\{\{[^}]*\}\}/g, '')
+    /* Stripping the Liquid leaves the empty-state product list as broken JSON,
+       so real data goes back in — otherwise the suggestions silently render as
+       nothing and every assertion about them would pass vacuously. */
+    .replace(/(<script type="application\/json" data-cart-products>)[\s\S]*?(<\/script>)/,
+      (_, a, b) => a + JSON.stringify(products.map((x) => ({
+        id: x.vid, title: x.name.replace(' LUXAMOM', ''), price: x.price,
+        priceText: '₪' + x.price / 100, image: '', url: '/products/x'
+      }))) + b);
 
-/* The upsell list and its nudge were removed from the drawer: the cart shows
-   what is in it. What remains here are the products a cart line can hold. */
-const products = [
-  { pid: 8002056126542, vid: 44100000001, name: 'תיק החתלה 3-ב-1 LUXAMOM', price: 34900 },
-  { pid: 8016473555022, vid: 44147655180366, name: 'מנשא חיבוק LUXAMOM', price: 16999 },
-  { pid: 8002063007822, vid: 44100000002, name: 'מחמם בקבוק אלחוטי נייד LUXAMOM', price: 11900 },
-  { pid: 8003086024782, vid: 44100000003, name: 'כרית מגן ראש לתינוק LUXAMOM', price: 9900 }
-];
 
 writeFileSync(
   DIR + '/cart.html',
@@ -112,6 +121,52 @@ await page.click('[data-cart-toggle]');
 await page.waitForTimeout(120);
 await check('empty cart opens without errors', async () =>
   (await page.isVisible('[data-cart-drawer]')) && (await errs()).length === 0);
+
+/* The empty state offers the shelf: an empty drawer is the one place in the cart
+   where there is nothing to interrupt. The moment a line exists it must be gone
+   again — that is the whole point of moving it here. */
+await check('סל ריק מציע מוצרים', async () =>
+  (await page.locator('.lxm-cart-sugg').count()) === products.length);
+await check('ולכל אחד יש מחיר וכפתור הוספה', async () =>
+  (await page.locator('.lxm-cart-sugg-add').count()) === products.length &&
+  (await page.textContent('.lxm-cart-sugg-price >> nth=0')).includes('₪'));
+await check('בסל ריק אין סיכום ואין תשלום', async () =>
+  await page.isHidden('[data-cart-foot]'));
+
+/* Adding from the empty state must produce a real cart, and the shelf must
+   disappear with it rather than sit above the line she just added. */
+await clearErrs();
+await page.evaluate(() => {
+  var real = window.fetch;
+  window.fetch = function(url, opts){
+    if (String(url).indexOf('/cart/add.js') === 0) {
+      var b = JSON.parse(opts.body);
+      window.__cart = { item_count: 1, total_price: 9900, total_discount: 0, original_total_price: 9900,
+        discount_codes: [], cart_level_discount_applications: [],
+        items: [{ key: 'added', id: b.items[0].id, product_id: 1, product_title: 'נוסף מהסל הריק',
+                  variant_title: null, quantity: b.items[0].quantity, final_line_price: 9900,
+                  url: '/products/x', image: null }] };
+    }
+    return real(url, opts);
+  };
+});
+await page.click('.lxm-cart-sugg-add >> nth=0');
+await page.waitForTimeout(350);
+await check('הוספה מהסל הריק מוסיפה באמת', async () =>
+  (await page.locator('.lxm-cart-line').count()) === 1);
+await check('ואז רשימת ההצעות נעלמת', async () =>
+  (await page.locator('.lxm-cart-sugg').count()) === 0);
+await check('והסיכום חוזר', async () => await page.isVisible('[data-cart-foot]'));
+await check('בלי שגיאות', async () => (await errs()).length === 0);
+
+// back to empty for the rest of the file
+await setCart({ item_count: 0, items: [], total_price: 0, total_discount: 0, original_total_price: 0 });
+await page.evaluate(() => window.LXMCart.close());
+await page.waitForTimeout(120);
+await page.click('[data-cart-toggle]');
+await page.waitForTimeout(200);
+await check('ההצעות חוזרות כשהסל מתרוקן', async () =>
+  (await page.locator('.lxm-cart-sugg').count()) === products.length);
 
 // 2 — one item
 await setCart({ item_count: 1, items: [line(1)], total_price: 16999, total_discount: 0, original_total_price: 16999 });
