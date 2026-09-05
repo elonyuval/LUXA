@@ -1,0 +1,82 @@
+{%- comment -%}
+  LUXA accessibility statement (הצהרת נגישות). Israeli regulations require a
+  published statement alongside the accessibility component itself, including a
+  named contact for accessibility requests. Add this section to a page
+  (/pages/accessibility) — the widget's footer links there by default.
+{%- endcomment -%}
+
+<style>
+  .luxa-a11y-doc{max-width:820px;margin:0 auto;padding:56px 20px 72px;font-family:'Montserrat',Arial,sans-serif;color:#1A1410;line-height:1.9;font-size:14px;direction:rtl;text-align:right;}
+  .luxa-a11y-doc h1{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:400;margin:0 0 8px;}
+  .luxa-a11y-doc .luxa-a11y-doc-date{font-size:11px;letter-spacing:1.5px;color:#8C7B6B;margin-bottom:32px;}
+  .luxa-a11y-doc h2{font-size:15px;font-weight:600;letter-spacing:1px;margin:32px 0 10px;padding-bottom:8px;border-bottom:1px solid #E6DED3;}
+  .luxa-a11y-doc p{margin:0 0 12px;}
+  .luxa-a11y-doc ul{margin:0 0 12px;padding-inline-start:20px;}
+  .luxa-a11y-doc li{margin-bottom:6px;}
+  .luxa-a11y-doc a{color:#1A1410;text-decoration:underline;text-underline-offset:3px;}
+  .luxa-a11y-doc-contact{background:#FAF8F5;border:1px solid #E6DED3;border-radius:12px;padding:20px 22px;margin-top:16px;}
+</style>
+
+<div class="luxa-a11y-doc" dir="rtl" lang="he">
+  <h1>{{ section.settings.heading | default: 'הצהרת נגישות' }}</h1>
+  <p class="luxa-a11y-doc-date">עודכן לאחרונה: {{ section.settings.updated_at | default: 'אוגוסט 2026' }}</p>
+
+  <p>
+    {{ section.settings.intro | default: 'אנחנו ב-Luxa רואים בנגישות האתר חלק מהשירות עצמו, ופועלים כדי שכל אדם — לרבות אנשים עם מוגבלות — יוכל לגלוש, להתרשם מהמוצרים ולהשלים הזמנה בעצמאות, בכבוד ובנוחות.' }}
+  </p>
+
+  <h2>רמת הנגישות באתר</h2>
+  <p>
+    האתר הונגש בהתאם לתקנות שוויון זכויות לאנשים עם מוגבלות (התאמות נגישות לשירות), התשע"ג-2013,
+    ובהתאם לתקן הישראלי ת"י 5568 המבוסס על הנחיות WCAG 2.0 ברמה AA.
+  </p>
+
+  <h2>ההתאמות שבוצעו באתר</h2>
+  <ul>
+    <li>רכיב נגישות קבוע בכל עמודי האתר, הנפתח בלחיצה על סמל הנגישות בפינת המסך (או במקש הקיצור <strong>Alt + A</strong>).</li>
+    <li>אפשרות להגדלת הטקסט בכמה רמות, ללא שבירת המבנה של העמוד.</li>
+    <li>מצבי ניגודיות כהה ובהירה, היפוך צבעים ותצוגת גווני אפור.</li>
+    <li>גופן קריא, ריווח שורות ואותיות מוגדל, הדגשת קישורים והדגשת כותרות.</li>
+    <li>סמן עכבר מוגדל, עצירת אנימציות ותנועה, והדגשה ברורה של מיקוד המקלדת.</li>
+    <li>ניווט מלא באמצעות מקלדת, קישור "דילוג לתוכן המרכזי", ומבנה כותרות היררכי.</li>
+    <li>תיאורים חלופיים לתמונות, תוויות לשדות טופס וכפתורים, ושמירה על ניגודיות צבעים מספקת.</li>
+    <li>העדפות הנגישות שנבחרו נשמרות בדפדפן וממשיכות ללוות את הגולש בין עמודי האתר.</li>
+  </ul>
+
+  <h2>מגבלות ידועות</h2>
+  <p>
+    {{ section.settings.limitations | default: 'למרות מאמצינו, ייתכנו באתר חלקים שטרם הונגשו במלואם — בעיקר בתכנים חיצוניים המוצגים באתר (כגון סרטונים, יישומונים או שירותי צד שלישי) שאינם בשליטתנו המלאה. אנו ממשיכים לתקן ולשפר את הנגישות באופן שוטף.' }}
+  </p>
+
+  <h2>פנייה בנושא נגישות</h2>
+  <p>
+    נתקלתם בבעיית נגישות באתר, או שיש לכם בקשה או הצעה לשיפור? נשמח שתפנו אלינו.
+    נטפל בפנייה בהקדם ונחזור אליכם עם מענה.
+  </p>
+  <div class="luxa-a11y-doc-contact">
+    <p><strong>רכז/ת נגישות:</strong> {{ section.settings.contact_name | default: 'יובל אלון' }}</p>
+    {%- if section.settings.contact_email != blank %}
+      <p><strong>דוא"ל:</strong> <a href="mailto:{{ section.settings.contact_email }}">{{ section.settings.contact_email }}</a></p>
+    {%- endif %}
+    {%- if section.settings.contact_phone != blank %}
+      <p><strong>טלפון:</strong> <a href="tel:{{ section.settings.contact_phone | remove: '-' | remove: ' ' }}">{{ section.settings.contact_phone }}</a></p>
+    {%- endif %}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Luxa accessibility statement",
+  "tag": "section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "הצהרת נגישות" },
+    { "type": "text", "id": "updated_at", "label": "Last updated", "default": "אוגוסט 2026" },
+    { "type": "textarea", "id": "intro", "label": "Intro paragraph" },
+    { "type": "textarea", "id": "limitations", "label": "Known limitations" },
+    { "type": "text", "id": "contact_name", "label": "Accessibility coordinator name", "default": "יובל אלון" },
+    { "type": "text", "id": "contact_email", "label": "Contact email", "default": "elonyuval0201@gmail.com" },
+    { "type": "text", "id": "contact_phone", "label": "Contact phone" }
+  ],
+  "presets": [{ "name": "Luxa accessibility statement" }]
+}
+{% endschema %}

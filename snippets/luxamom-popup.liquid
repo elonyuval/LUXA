@@ -1,0 +1,262 @@
+{%- comment -%}
+  The welcome popup: joins the LUXAMOM family, hands back a 10% code.
+
+  Rules it follows, because a popup that ignores them costs more than it earns:
+    · once per visitor, ever — a dismissal is remembered, not re-asked
+    · never on the cart or checkout, where interrupting costs an order
+    · never while the cart drawer is open
+    · after a delay, so it does not land on top of a page still painting
+    · Esc, the backdrop and a real close button all dismiss it
+    · focus is trapped while open and returned when it closes
+
+  The code is revealed in the popup itself the moment she signs up. Shopify's
+  customer form posts and redirects back with ?customer_posted=true, so the
+  success state re-opens the popup rather than losing her on a blank page.
+
+  Optional params:
+    code     — the discount code (default LUXAMOM10)
+    percent  — the number in the copy (default 10)
+    delay    — seconds before it appears (default 7)
+{%- endcomment -%}
+
+{%- liquid
+  assign pop_code = code | default: 'LUXAMOM10'
+  assign pop_percent = percent | default: 10
+  assign pop_delay = delay | default: 7
+
+  # A signed-in shopper who already accepted marketing is a subscriber; the shop
+  # already knows, so it should not ask her again.
+  assign pop_known = false
+  if customer and customer.accepts_marketing
+    assign pop_known = true
+  endif
+-%}
+
+{%- unless template.name == 'cart' -%}
+<style>
+.lxm-pop{position:fixed;inset:0;z-index:420;display:none;align-items:center;justify-content:center;padding:22px;
+  background:rgba(26,20,16,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  direction:rtl;font-family:'Assistant','Segoe UI',sans-serif;color:#3a2f28;line-height:1.6;}
+.lxm-pop.lxm-pop-open{display:flex;}
+.lxm-pop *{box-sizing:border-box;}
+.lxm-pop-box{position:relative;width:100%;max-width:420px;background:#FAF6F1;border-radius:22px;
+  padding:34px 28px 28px;box-shadow:0 26px 70px rgba(26,20,16,.34);text-align:center;
+  max-height:92vh;overflow-y:auto;}
+.lxm-pop-close{position:absolute;top:12px;inset-inline-start:12px;background:none;border:none;cursor:pointer;
+  color:#8B7060;padding:8px;border-radius:50%;line-height:0;}
+.lxm-pop-close:hover{background:rgba(139,112,96,.14);}
+.lxm-pop-close svg{width:18px;height:18px;}
+.lxm-pop-eyebrow{font-size:12px;letter-spacing:.16em;font-weight:700;color:#c17b7e;margin:0 0 10px;}
+.lxm-pop-title{font-family:'Frank Ruhl',serif;font-weight:700;font-size:29px;color:#6b5646;margin:0 0 10px;line-height:1.2;}
+.lxm-pop-sub{font-size:15.5px;margin:0 0 22px;opacity:.84;}
+.lxm-pop-input{width:100%;border:1px solid rgba(139,112,96,.35);border-radius:12px;background:#fff;
+  padding:14px 15px;font:inherit;font-size:16px;color:#4a3b30;margin-bottom:10px;}
+.lxm-pop-input:focus{outline:2px solid #8B7060;outline-offset:1px;}
+.lxm-pop-btn{width:100%;border:none;border-radius:12px;background:#4a3b30;color:#fff;font:inherit;font-size:16px;
+  font-weight:700;padding:15px;cursor:pointer;}
+.lxm-pop-btn:hover{background:#8B7060;}
+.lxm-pop-skip{margin:14px 0 0;background:none;border:none;font:inherit;font-size:13px;color:#8B7060;
+  text-decoration:underline;cursor:pointer;padding:4px;}
+.lxm-pop-note{margin:12px 0 0;font-size:12.5px;opacity:.6;}
+.lxm-pop-err{margin:10px 0 0;font-size:13.5px;color:#a3402f;}
+.lxm-pop-code{display:flex;align-items:center;justify-content:center;gap:10px;border:2px dashed #c17b7e;
+  border-radius:12px;padding:14px 16px;background:#FDF7F4;margin-top:4px;}
+.lxm-pop-code-text{font-size:23px;font-weight:700;letter-spacing:.09em;color:#4a3b30;direction:ltr;unicode-bidi:isolate;}
+.lxm-pop-copy{border:none;background:#F3ECE3;color:#4a3b30;border-radius:9px;padding:9px 14px;font:inherit;
+  font-size:13.5px;font-weight:600;cursor:pointer;}
+.lxm-pop-copy:hover{background:#e7dbcd;}
+.lxm-pop-copied{margin:11px 0 0;font-size:13.5px;font-weight:600;color:#4a7a3f;min-height:20px;}
+.lxm-pop-go{display:inline-block;margin-top:16px;border-radius:999px;background:#8B7060;color:#fff;
+  font-weight:700;font-size:15px;padding:13px 30px;text-decoration:none;}
+.lxm-pop-go:hover{background:#6b5646;}
+@media (prefers-reduced-motion: no-preference){
+  .lxm-pop.lxm-pop-open .lxm-pop-box{animation:lxmPopIn .28s ease-out;}
+  @keyframes lxmPopIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+}
+@media(max-width:420px){ .lxm-pop{padding:14px;} .lxm-pop-box{padding:30px 20px 24px;} .lxm-pop-title{font-size:26px;} }
+</style>
+
+<div class="lxm-pop" data-lxm-pop data-pop-delay="{{ pop_delay }}"
+     data-pop-known="{% if pop_known %}true{% else %}false{% endif %}" hidden>
+  <div class="lxm-pop-box" role="dialog" aria-modal="true" aria-labelledby="lxm-pop-title">
+    <button type="button" class="lxm-pop-close" data-pop-close aria-label="סגירה">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+
+    {%- form 'customer', id: 'lxm-pop-form' -%}
+      {%- if form.posted_successfully? -%}
+        <p class="lxm-pop-eyebrow">משפחת LUXAMOM</p>
+        <h2 class="lxm-pop-title" id="lxm-pop-title">ברוכה הבאה 🤍</h2>
+        <p class="lxm-pop-sub">הנה {{ pop_percent }}% הנחה על ההזמנה שלך. כדאי להעתיק את הקוד עכשיו.</p>
+        <div class="lxm-pop-code">
+          <span class="lxm-pop-code-text" data-pop-code>{{ pop_code }}</span>
+          <button type="button" class="lxm-pop-copy" data-pop-copy>העתקה</button>
+        </div>
+        <p class="lxm-pop-copied" data-pop-copied role="status"></p>
+        {%- comment -%}
+          The home page's own product shelf, not /collections/all — that page is
+          the unstyled stock template and is a poor place to land someone who has
+          just handed over an email.
+        {%- endcomment -%}
+        <a class="lxm-pop-go" href="{{ routes.root_url | append: '#products' }}" data-pop-go>לצפייה במוצרים</a>
+      {%- else -%}
+        <p class="lxm-pop-eyebrow">משפחת LUXAMOM</p>
+        <h2 class="lxm-pop-title" id="lxm-pop-title">{{ pop_percent }}% הנחה על ההזמנה הראשונה</h2>
+        <p class="lxm-pop-sub">מצטרפות לרשימה ומקבלות את הקוד מיד.</p>
+
+        <input type="hidden" name="contact[tags]" value="newsletter,luxamom-club">
+        <label class="lxm-pop-hidden-label" for="lxm-pop-email" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">כתובת מייל</label>
+        <input id="lxm-pop-email" class="lxm-pop-input" type="email" name="contact[email]"
+               placeholder="כתובת המייל שלך" required autocomplete="email" data-pop-email>
+        <button type="submit" class="lxm-pop-btn">קבלי {{ pop_percent }}% הנחה</button>
+        {%- if form.errors -%}
+          <p class="lxm-pop-err">{{ form.errors | default_errors }}</p>
+        {%- endif -%}
+        <button type="button" class="lxm-pop-skip" data-pop-close>לא עכשיו, תודה</button>
+        <p class="lxm-pop-note">הקוד תקף לשימוש אחד. אפשר להסיר את עצמך בכל רגע.</p>
+      {%- endif -%}
+    {%- endform -%}
+  </div>
+</div>
+
+<script>
+(function(){
+  var pop = document.querySelector('[data-lxm-pop]');
+  if (!pop) return;
+
+  var box = pop.querySelector('.lxm-pop-box');
+  var KEY = 'lxmPopSeen';
+  var lastFocus = null;
+  var timer = null;
+
+  // Storage throws in private mode on some browsers, and a popup that cannot
+  // remember a dismissal must still be dismissable.
+  function seen(){
+    try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; }
+  }
+  function remember(){
+    try { localStorage.setItem(KEY, '1'); } catch (e) {}
+  }
+
+  function open(){
+    if (pop.classList.contains('lxm-pop-open')) return;
+    lastFocus = document.activeElement;
+    pop.hidden = false;
+    pop.classList.add('lxm-pop-open');
+    document.body.style.overflow = 'hidden';
+    var first = pop.querySelector('[data-pop-email]') || pop.querySelector('[data-pop-copy]') || pop.querySelector('[data-pop-close]');
+    if (first) first.focus();
+  }
+
+  /* ?lxmpop=1 forces the popup open and stops it recording anything, so it can
+     be looked at repeatedly without clearing storage or opening a private
+     window — which is most of what checking a popup on a phone involves. */
+  var preview = /[?&]lxmpop=1(&|$)/.test(location.search);
+
+  function close(){
+    pop.classList.remove('lxm-pop-open');
+    pop.hidden = true;
+    document.body.style.overflow = '';
+    if (!preview) remember();
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+
+  /* Shared with the club section on the home page, so joining in either place is
+     remembered in both and neither asks twice. */
+  var JOINED = 'lxmClubJoined';
+  function joined(){
+    try { return localStorage.getItem(JOINED) === '1'; } catch (e) { return false; }
+  }
+  function rememberJoined(){
+    try { localStorage.setItem(JOINED, '1'); } catch (e) {}
+  }
+
+  var posted = !!pop.querySelector('[data-pop-code]');
+  var known = pop.getAttribute('data-pop-known') === 'true' || joined();
+
+  if (preview && !posted) {
+    // Straight to the point: no delay, nothing remembered, nothing skipped.
+    open();
+  } else if (posted) {
+    // She just signed up: show the code straight away and never ask again.
+    if (!preview) { remember(); rememberJoined(); }
+    open();
+  } else if (known) {
+    // Already a subscriber. Asking again is asking a question the shop can
+    // already answer, so the popup simply does not appear.
+    remember();
+  } else if (!seen()) {
+    var delay = (parseFloat(pop.getAttribute('data-pop-delay')) || 7) * 1000;
+    timer = setTimeout(function(){
+      // The drawer owns the screen when it is open; two overlays at once is a trap.
+      var drawer = document.querySelector('[data-cart-drawer]');
+      if (drawer && drawer.classList.contains('lxm-open')) return;
+      open();
+    }, delay);
+  }
+
+  pop.querySelectorAll('[data-pop-close]').forEach(function(btn){
+    btn.addEventListener('click', function(){ if (timer) clearTimeout(timer); close(); });
+  });
+
+  pop.addEventListener('click', function(e){ if (e.target === pop) close(); });
+
+  document.addEventListener('keydown', function(e){
+    if (!pop.classList.contains('lxm-pop-open')) return;
+    if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+    if (e.key !== 'Tab') return;
+    // Keep focus inside the dialog while it is open.
+    var f = box.querySelectorAll('a[href], button, input, [tabindex]:not([tabindex="-1"])');
+    var list = Array.prototype.filter.call(f, function(el){ return el.offsetParent !== null || el === document.activeElement; });
+    if (!list.length) return;
+    var first = list[0], last = list[list.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
+
+  /* When the shelf is already on this page — which it is whenever she signed up
+     from the home page — scroll to it instead of reloading the page she is
+     standing on. The href still works on its own if this never runs. */
+  var go = pop.querySelector('[data-pop-go]');
+  if (go) {
+    go.addEventListener('click', function(e){
+      var target = document.getElementById('products');
+      if (!target) return;
+      e.preventDefault();
+      close();
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    });
+  }
+
+  var copy = pop.querySelector('[data-pop-copy]');
+  if (copy) {
+    var codeEl = pop.querySelector('[data-pop-code]');
+    var said = pop.querySelector('[data-pop-copied]');
+    function tell(t){ if (said) said.textContent = t; }
+    copy.addEventListener('click', function(){
+      var code = codeEl ? codeEl.textContent.trim() : '';
+      if (!code) return;
+      function fallback(){
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = code;
+          ta.setAttribute('readonly', '');
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          var ok = document.execCommand && document.execCommand('copy');
+          document.body.removeChild(ta);
+          tell(ok ? 'הקוד הועתק' : 'לא הצלחנו להעתיק — אפשר לסמן ולהעתיק ידנית');
+        } catch (e) { tell('לא הצלחנו להעתיק — אפשר לסמן ולהעתיק ידנית'); }
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(function(){ tell('הקוד הועתק'); }, fallback);
+      } else { fallback(); }
+    });
+  }
+})();
+</script>
+{%- endunless -%}

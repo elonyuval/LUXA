@@ -1,0 +1,389 @@
+{%- comment -%}
+  UGC video shelf — two videos per product, each playing in place.
+
+  Videos come from the product metafield custom.ugc_videos (a list of Shopify
+  video files). Nothing is captioned: the heading carries the whole message and
+  the videos speak for themselves. A video's alt text is used only as the
+  accessible name of its player, never as visible text.
+
+  Playback is inline. Clicking a video starts it where it sits, at the size it
+  already occupies — no lightbox, no overlay, nothing that moves the page. The
+  shopper stays exactly where they were.
+
+  Nothing is downloaded until a video is started: the poster is Shopify's
+  generated thumbnail and every <video> carries preload="none".
+
+  Sound is ON from the first frame. Starting a video is a deliberate click, so
+  there is no autoplay to apologise for and no "tap to unmute" dance. A browser
+  that still refuses falls back to muted playback rather than a dead player.
+
+  Optional params:
+    heading  — section title
+{%- endcomment -%}
+
+{%- liquid
+  assign ugc = product.metafields.custom.ugc_videos.value
+  assign ugc_heading = heading | default: 'רגעים אמיתיים עם LUXAMOM'
+-%}
+
+{%- if ugc != blank and ugc.size > 0 -%}
+<style>
+.lxm-ugc{padding:74px 0;direction:rtl;font-family:'Assistant','Segoe UI',sans-serif;color:#3a2f28;line-height:1.6;}
+.lxm-ugc *{box-sizing:border-box;}
+.lxm-ugc-wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
+.lxm-ugc-head{text-align:center;max-width:640px;margin:0 auto 34px;}
+.lxm-ugc-title{font-family:'Frank Ruhl',serif;font-weight:700;font-size:clamp(26px,3.6vw,36px);color:#6b5646;margin:0;}
+
+.lxm-ugc-rail{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px 4px 22px;
+  width:fit-content;max-width:100%;margin:0 auto;scrollbar-width:thin;scrollbar-color:#D9989A transparent;}
+.lxm-ugc-rail::-webkit-scrollbar{height:6px;}
+.lxm-ugc-rail::-webkit-scrollbar-thumb{background:rgba(139,112,96,.25);border-radius:99px;}
+
+/* The card is the player. Its box never changes size, before or during
+   playback, so starting a video moves nothing on the page. */
+.lxm-ugc-item{flex:0 0 auto;width:300px;scroll-snap-align:start;position:relative;aspect-ratio:9/16;
+  border-radius:20px;overflow:hidden;background:#1a1410;box-shadow:0 14px 36px rgba(107,86,70,.14);
+  container-type:inline-size;}
+.lxm-ugc-item video{width:100%;height:100%;object-fit:cover;display:block;background:#1a1410;}
+
+/* The cover sits over the poster until the first play, then gets out of the way. */
+.lxm-ugc-cover{position:absolute;inset:0;background:none;border:none;padding:0;margin:0;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font:inherit;color:inherit;}
+.lxm-ugc-cover[hidden]{display:none;}
+.lxm-ugc-item:focus-within{outline:3px solid #6b5646;outline-offset:3px;}
+.lxm-ugc-play{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.94);display:flex;align-items:center;
+  justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.24);transition:transform .25s ease;}
+.lxm-ugc-cover:hover .lxm-ugc-play{transform:scale(1.09);}
+.lxm-ugc-play svg{width:20px;height:20px;fill:#4a3b30;margin-inline-start:3px;}
+.lxm-ugc-dur{position:absolute;bottom:12px;inset-inline-end:12px;background:rgba(26,20,16,.78);color:#fff;font-size:11.5px;
+  font-weight:600;padding:3px 9px;border-radius:999px;direction:ltr;unicode-bidi:isolate;}
+
+/* ---- controls, inside the card ---- */
+.lxm-ugc-ctl{position:absolute;inset-inline:0;bottom:0;padding:26px 10px 10px;
+  background:linear-gradient(transparent,rgba(0,0,0,.84));display:flex;flex-direction:column;gap:7px;line-height:normal;}
+.lxm-ugc-ctl[hidden]{display:none;}
+/* `hidden` is an HTML content attribute: the UA stylesheet does not apply it to
+   SVG elements, so without this rule both halves of every toggle icon show. */
+.lxm-ugc-ctl svg[hidden]{display:none;}
+.lxm-ugc-scrub{position:relative;height:20px;display:flex;align-items:center;cursor:pointer;}
+.lxm-ugc-track{position:relative;height:4px;width:100%;border-radius:99px;background:rgba(255,255,255,.3);overflow:hidden;}
+.lxm-ugc-buf{position:absolute;inset-block:0;inset-inline-start:0;background:rgba(255,255,255,.3);width:0;}
+.lxm-ugc-fill{position:absolute;inset-block:0;inset-inline-start:0;background:#D9989A;width:0;}
+.lxm-ugc-knob{position:absolute;width:12px;height:12px;border-radius:50%;background:#fff;inset-inline-start:0;
+  transform:translateX(50%);box-shadow:0 1px 5px rgba(0,0,0,.45);pointer-events:none;}
+.lxm-ugc-scrub:focus-visible{outline:2px solid #fff;outline-offset:3px;border-radius:6px;}
+.lxm-ugc-row{display:flex;align-items:center;gap:4px;flex-wrap:nowrap;min-width:0;}
+.lxm-ugc-btn{background:none;border:none;color:#fff;cursor:pointer;padding:6px;display:flex;align-items:center;
+  justify-content:center;border-radius:8px;flex:0 0 auto;}
+.lxm-ugc-btn:hover{background:rgba(255,255,255,.16);}
+.lxm-ugc-btn:focus-visible{outline:2px solid #fff;outline-offset:1px;}
+.lxm-ugc-btn svg{width:18px;height:18px;fill:currentColor;}
+.lxm-ugc-time{color:#fff;font-size:12px;font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate;
+  white-space:nowrap;flex:0 0 auto;margin-inline-start:3px;}
+.lxm-ugc-spacer{flex:1 1 auto;min-width:0;}
+.lxm-ugc-vol{display:flex;align-items:center;gap:3px;min-width:0;}
+.lxm-ugc-vol input{width:66px;flex:0 1 66px;min-width:0;accent-color:#D9989A;cursor:pointer;}
+
+/* The bar sits inside a narrow card, so controls drop out in order of how
+   replaceable they are: the volume slider first (the mute button stays), then
+   the skip buttons (the scrubber still seeks), then the timecode. Play, mute
+   and fullscreen never drop. */
+@container (max-width: 340px){ .lxm-ugc-vol input{display:none;} }
+@container (max-width: 260px){ .lxm-ugc-skip{display:none;} }
+@container (max-width: 200px){ .lxm-ugc-time{display:none;} }
+
+@media(max-width:700px){ .lxm-ugc-item{width:min(78vw,320px);} }
+@media (prefers-reduced-motion: reduce){ .lxm-ugc-cover:hover .lxm-ugc-play{transform:none;} }
+</style>
+
+<section class="lxm-ugc" id="ugc">
+  <div class="lxm-ugc-wrap">
+    <div class="lxm-ugc-head">
+      <h2 class="lxm-ugc-title">{{ ugc_heading }}</h2>
+    </div>
+
+    <div class="lxm-ugc-rail">
+      {%- for v in ugc -%}
+        {%- liquid
+          assign secs = v.duration | divided_by: 1000
+          assign mm = secs | divided_by: 60
+          assign ss = secs | modulo: 60
+          assign label = v.alt | default: 'סרטון מהשימוש במוצר'
+        -%}
+        <div class="lxm-ugc-item" data-ugc-player>
+          {%- comment -%}
+            Renditions are emitted highest first: a browser plays the FIRST
+            source it supports, not the best one it finds, so ordering them the
+            other way round serves everyone the lowest quality.
+          {%- endcomment -%}
+          <video data-ugc-video playsinline preload="none" controls
+                 poster="{{ v.preview_image | image_url: width: 700 }}"
+                 aria-label="{{ label | escape }}">
+            {%- assign mp4s = v.sources | where: 'format', 'mp4' | sort: 'height' | reverse -%}
+            {%- for s in mp4s -%}
+              <source src="{{ s.url }}" type="video/mp4">
+            {%- endfor -%}
+          </video>
+
+          <button type="button" class="lxm-ugc-cover" data-ugc-cover
+                  aria-label="נגן סרטון: {{ label | escape }}">
+            <span class="lxm-ugc-play" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </span>
+            <span class="lxm-ugc-dur">{{ mm }}:{{ ss | prepend: '0' | slice: -2, 2 }}</span>
+          </button>
+
+          <div class="lxm-ugc-ctl" data-ugc-ctl hidden>
+            <div class="lxm-ugc-scrub" data-ugc-scrub role="slider" tabindex="0"
+                 aria-label="מיקום בסרטון" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <span class="lxm-ugc-track">
+                <span class="lxm-ugc-buf" data-ugc-buf></span>
+                <span class="lxm-ugc-fill" data-ugc-fill></span>
+              </span>
+              <span class="lxm-ugc-knob" data-ugc-knob></span>
+            </div>
+
+            <div class="lxm-ugc-row">
+              <button type="button" class="lxm-ugc-btn" data-ugc-play aria-label="השהה">
+                <svg viewBox="0 0 24 24" data-ugc-icon-play hidden><path d="M8 5v14l11-7z"/></svg>
+                <svg viewBox="0 0 24 24" data-ugc-icon-pause><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+              </button>
+              <button type="button" class="lxm-ugc-btn lxm-ugc-skip" data-ugc-back aria-label="אחורה 10 שניות">
+                <svg viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg>
+              </button>
+              <button type="button" class="lxm-ugc-btn lxm-ugc-skip" data-ugc-fwd aria-label="קדימה 10 שניות">
+                <svg viewBox="0 0 24 24"><path d="M12 5V2l5 4-5 4V7a5 5 0 1 0 5 5h2a7 7 0 1 1-7-7z"/></svg>
+              </button>
+              <span class="lxm-ugc-time" data-ugc-time>0:00 / 0:00</span>
+
+              <span class="lxm-ugc-spacer"></span>
+
+              <span class="lxm-ugc-vol">
+                <button type="button" class="lxm-ugc-btn" data-ugc-mute aria-label="השתקה">
+                  <svg viewBox="0 0 24 24" data-ugc-icon-vol><path d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/></svg>
+                  <svg viewBox="0 0 24 24" data-ugc-icon-muted hidden><path d="M4 9v6h4l5 4V5L8 9H4zm15 .4L17.6 8l-2.1 2.1L13.4 8 12 9.4l2.1 2.1L12 13.6 13.4 15l2.1-2.1 2.1 2.1 1.4-1.4-2.1-2.1z"/></svg>
+                </button>
+                <input type="range" min="0" max="1" step="0.05" value="1" data-ugc-vol aria-label="עוצמת קול">
+              </span>
+
+              <button type="button" class="lxm-ugc-btn" data-ugc-full aria-label="מסך מלא">
+                <svg viewBox="0 0 24 24"><path d="M4 9V4h5v2H6v3H4zm11-5h5v5h-2V6h-3V4zM4 15h2v3h3v2H4v-5zm14 0h2v5h-5v-2h3v-3z"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+  var section = document.getElementById('ugc');
+  if (!section) return;
+
+  var players = [].slice.call(section.querySelectorAll('[data-ugc-player]'));
+  if (!players.length) return;
+
+  var videos = [];
+
+  function fmt(t){
+    if (!isFinite(t) || t < 0) t = 0;
+    var m = Math.floor(t / 60), s = Math.floor(t % 60);
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  /* `hidden` is an HTMLElement property; these icons are <svg>, so assigning
+     el.hidden would only set a JS expando and the toggle would never show. */
+  function setHidden(el, hide){
+    if (hide) el.setAttribute('hidden', ''); else el.removeAttribute('hidden');
+  }
+
+  players.forEach(function(root){
+    var video = root.querySelector('[data-ugc-video]');
+    var cover = root.querySelector('[data-ugc-cover]');
+    var ctl = root.querySelector('[data-ugc-ctl]');
+    var scrub = root.querySelector('[data-ugc-scrub]');
+    var fill = root.querySelector('[data-ugc-fill]');
+    var buf = root.querySelector('[data-ugc-buf]');
+    var knob = root.querySelector('[data-ugc-knob]');
+    var timeEl = root.querySelector('[data-ugc-time]');
+    var volInput = root.querySelector('[data-ugc-vol]');
+    var iconPlay = root.querySelector('[data-ugc-icon-play]');
+    var iconPause = root.querySelector('[data-ugc-icon-pause]');
+    var iconVol = root.querySelector('[data-ugc-icon-vol]');
+    var iconMuted = root.querySelector('[data-ugc-icon-muted]');
+    var btnPlay = root.querySelector('[data-ugc-play]');
+    var btnMute = root.querySelector('[data-ugc-mute]');
+    if (!video) return;
+    videos.push(video);
+
+    // The native controls are the no-JS fallback; from here the custom bar drives.
+    video.removeAttribute('controls');
+
+    var started = false;
+    var scrubbing = false;
+
+    function syncPlayIcon(){
+      var playing = !video.paused && !video.ended;
+      setHidden(iconPlay, playing);
+      setHidden(iconPause, !playing);
+      btnPlay.setAttribute('aria-label', playing ? 'השהה' : 'נגן');
+    }
+
+    function syncVolume(){
+      var off = video.muted || video.volume === 0;
+      setHidden(iconVol, off);
+      setHidden(iconMuted, !off);
+      btnMute.setAttribute('aria-label', off ? 'ביטול השתקה' : 'השתקה');
+      volInput.value = video.muted ? 0 : video.volume;
+    }
+
+    function syncProgress(){
+      var d = video.duration;
+      var pct = (isFinite(d) && d > 0) ? (video.currentTime / d) * 100 : 0;
+      fill.style.width = pct + '%';
+      knob.style.insetInlineStart = pct + '%';
+      scrub.setAttribute('aria-valuenow', String(Math.round(pct)));
+      scrub.setAttribute('aria-valuetext', fmt(video.currentTime) + ' מתוך ' + fmt(d));
+      timeEl.textContent = fmt(video.currentTime) + ' / ' + fmt(d);
+      if (video.buffered && video.buffered.length && isFinite(d) && d > 0) {
+        buf.style.width = ((video.buffered.end(video.buffered.length - 1) / d) * 100) + '%';
+      }
+    }
+
+    function seekTo(clientX){
+      var r = scrub.getBoundingClientRect();
+      if (!r.width || !isFinite(video.duration)) return;
+      // The shelf is RTL, so progress runs right to left.
+      var ratio = (r.right - clientX) / r.width;
+      ratio = Math.min(1, Math.max(0, ratio));
+      video.currentTime = ratio * video.duration;
+      syncProgress();
+    }
+
+    function nudge(by){
+      if (!isFinite(video.duration)) return;
+      video.currentTime = Math.min(video.duration, Math.max(0, video.currentTime + by));
+      syncProgress();
+    }
+
+    function start(){
+      // Only one video plays at a time: a second soundtrack starting under the
+      // first is the fastest way to make someone leave the page.
+      videos.forEach(function(other){ if (other !== video) other.pause(); });
+      if (!started) {
+        started = true;
+        cover.hidden = true;
+        ctl.hidden = false;
+      }
+      video.muted = false;
+      var p = video.play();
+      if (p && p.catch) p.catch(function(){
+        // Sound was refused, not playback. Muted is better than a dead player.
+        video.muted = true;
+        syncVolume();
+        var q = video.play();
+        if (q && q.catch) q.catch(function(){});
+      });
+    }
+
+    function toggle(){
+      if (video.paused || video.ended) start(); else video.pause();
+    }
+
+    cover.addEventListener('click', start);
+    video.addEventListener('click', function(){ if (started) toggle(); });
+    btnPlay.addEventListener('click', toggle);
+    root.querySelector('[data-ugc-back]').addEventListener('click', function(){ nudge(-10); });
+    root.querySelector('[data-ugc-fwd]').addEventListener('click', function(){ nudge(10); });
+
+    btnMute.addEventListener('click', function(){
+      video.muted = !video.muted;
+      if (!video.muted && video.volume === 0) video.volume = 1;
+      syncVolume();
+    });
+    volInput.addEventListener('input', function(){
+      video.volume = parseFloat(volInput.value);
+      video.muted = video.volume === 0;
+      syncVolume();
+    });
+
+    root.querySelector('[data-ugc-full]').addEventListener('click', function(){
+      if (document.fullscreenElement) {
+        var ex = document.exitFullscreen && document.exitFullscreen();
+        if (ex && ex.catch) ex.catch(function(){});
+        return;
+      }
+      // Fullscreen is the shopper asking for it, never something that happens
+      // to them: playback itself stays inline.
+      if (root.requestFullscreen) {
+        var req = root.requestFullscreen();
+        if (req && req.catch) req.catch(function(){});
+      } else if (video.webkitEnterFullscreen) {
+        video.webkitEnterFullscreen();
+      }
+    });
+
+    scrub.addEventListener('pointerdown', function(e){
+      scrubbing = true;
+      scrub.setPointerCapture(e.pointerId);
+      seekTo(e.clientX);
+    });
+    scrub.addEventListener('pointermove', function(e){ if (scrubbing) seekTo(e.clientX); });
+    scrub.addEventListener('pointerup', function(e){
+      scrubbing = false;
+      if (scrub.releasePointerCapture) scrub.releasePointerCapture(e.pointerId);
+    });
+    scrub.addEventListener('keydown', function(e){
+      var k = e.key;
+      if (k === 'ArrowRight') { e.preventDefault(); nudge(-5); }
+      else if (k === 'ArrowLeft') { e.preventDefault(); nudge(5); }
+      else if (k === 'Home') { e.preventDefault(); video.currentTime = 0; syncProgress(); }
+      else if (k === 'End' && isFinite(video.duration)) { e.preventDefault(); video.currentTime = video.duration; syncProgress(); }
+    });
+
+    /* Shortcuts are scoped to this card, not the document: there is no modal any
+       more, and a page-wide handler would swallow Space and the arrow keys while
+       the shopper is reading. */
+    root.addEventListener('keydown', function(e){
+      if (e.target === scrub || e.target === volInput) return;
+      var k = e.key;
+      if (k === ' ' || k === 'k' || k === 'K') { e.preventDefault(); toggle(); }
+      else if (k === 'ArrowRight') { e.preventDefault(); nudge(-5); }
+      else if (k === 'ArrowLeft') { e.preventDefault(); nudge(5); }
+      else if (k === 'j' || k === 'J') { e.preventDefault(); nudge(-10); }
+      else if (k === 'l' || k === 'L') { e.preventDefault(); nudge(10); }
+      else if (k === 'ArrowUp') { e.preventDefault(); video.muted = false; video.volume = Math.min(1, video.volume + 0.1); syncVolume(); }
+      else if (k === 'ArrowDown') { e.preventDefault(); video.volume = Math.max(0, video.volume - 0.1); video.muted = video.volume === 0; syncVolume(); }
+      else if (k === 'm' || k === 'M') { e.preventDefault(); btnMute.click(); }
+      else if (k === 'f' || k === 'F') { e.preventDefault(); root.querySelector('[data-ugc-full]').click(); }
+    });
+
+    video.addEventListener('play', function(){
+      videos.forEach(function(other){ if (other !== video) other.pause(); });
+      syncPlayIcon();
+    });
+    video.addEventListener('pause', syncPlayIcon);
+    video.addEventListener('timeupdate', syncProgress);
+    video.addEventListener('progress', syncProgress);
+    video.addEventListener('loadedmetadata', syncProgress);
+    video.addEventListener('volumechange', syncVolume);
+    video.addEventListener('ended', function(){
+      // Back to the poster, so the card reads as a thumbnail again rather than
+      // a black rectangle.
+      syncPlayIcon();
+      video.currentTime = 0;
+      syncProgress();
+      started = false;
+      ctl.hidden = true;
+      cover.hidden = false;
+    });
+
+    syncPlayIcon();
+    syncVolume();
+    syncProgress();
+  });
+})();
+</script>
+{%- endif -%}
