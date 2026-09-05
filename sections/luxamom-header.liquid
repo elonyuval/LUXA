@@ -606,6 +606,23 @@
     });
   });
 
+  /* Restored after being deleted by accident: removing the upsell block cut this
+     out with it, which left the drawer with no way to close — closeDrawer still
+     existed and nothing called it.
+
+     Delegated on document rather than bound to the button, so it does not depend
+     on the element reference captured at script-load time. Escape closes too. */
+  document.addEventListener('click', function(e){
+    if (e.target.closest('[data-cart-close]') || e.target === overlay || e.target.closest('[data-cart-overlay]')) {
+      closeDrawer();
+    }
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && drawer && drawer.classList.contains('lxm-open')) {
+      closeDrawer();
+    }
+  });
+
   window.LXMCart = {
     open: function(){ openDrawer(); showLoading(); return refresh(); },
     close: closeDrawer,

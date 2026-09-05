@@ -199,6 +199,43 @@ for (let i = 0; i < 5; i++) await page.click('[data-cart-toggle]', { force: true
 await page.waitForTimeout(300);
 await check('rapid repeated cart clicks raise no error', async () => (await errs()).length === 0);
 
+/* 9 — closing the drawer the way a shopper does.
+   Every test above closed it with LXMCart.close(), which is why none of them
+   noticed when the X, the overlay and Escape lost their listeners entirely:
+   closeDrawer() still existed and nothing called it. */
+const isOpen = () => page.evaluate(() =>
+  document.querySelector('[data-cart-drawer]').classList.contains('lxm-open'));
+
+const reopen = async () => {
+  await page.evaluate(() => window.LXMCart.close());
+  await page.waitForTimeout(120);
+  await page.click('[data-cart-toggle]');
+  await page.waitForTimeout(200);
+};
+
+await reopen();
+await check('הסל נפתח לפני בדיקת הסגירה', async () => await isOpen());
+
+await page.click('[data-cart-close]');
+await page.waitForTimeout(250);
+await check('האיקס סוגר את הסל', async () => !(await isOpen()));
+
+await reopen();
+await page.click('[data-cart-overlay]', { position: { x: 5, y: 5 } });
+await page.waitForTimeout(250);
+await check('לחיצה על הרקע סוגרת', async () => !(await isOpen()));
+
+await reopen();
+await page.keyboard.press('Escape');
+await page.waitForTimeout(250);
+await check('Escape סוגר', async () => !(await isOpen()));
+
+await reopen();
+await page.click('.lxm-cart-drawer-head h3');
+await page.waitForTimeout(200);
+await check('לחיצה בתוך הסל לא סוגרת אותו', async () => await isOpen());
+await page.evaluate(() => window.LXMCart.close());
+
 const all = await errs();
 console.log(all.length ? 'ERRORS SEEN:\n' + [...new Set(all)].join('\n') : 'no errors captured');
 await browser.close();
