@@ -1,0 +1,789 @@
+<style>
+.lxm-header{
+  position:sticky; top:0; z-index:150; background:rgba(250,246,241,.92);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  border-bottom:1px solid rgba(139,112,96,.12);
+  font-family:'Assistant','Segoe UI',sans-serif; direction:rtl;
+}
+.lxm-header .lxm-h-wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
+.lxm-header .lxm-nav{display:flex;align-items:center;justify-content:space-between;padding:16px 0;}
+.lxm-header .lxm-logo img{height:28px;width:auto;display:block;}
+.lxm-header .lxm-links{display:flex;gap:26px;font-size:15px;font-weight:600;list-style:none;margin:0;padding:0;}
+.lxm-header .lxm-links a{color:#4a3b30;text-decoration:none;position:relative;padding:4px 0;opacity:.85;white-space:nowrap;}
+.lxm-header .lxm-links a:hover{opacity:1;}
+.lxm-header .lxm-actions{display:flex;align-items:center;gap:14px;}
+.lxm-header .lxm-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#F3ECE3;color:#4a3b30;position:relative;}
+.lxm-header .lxm-icon svg{width:17px;height:17px;}
+.lxm-header .lxm-cart-count{position:absolute;top:-3px;left:-3px;background:#c17b7e;color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0 3px;}
+.lxm-header .lxm-burger{display:none;background:none;border:none;cursor:pointer;color:#4a3b30;padding:6px;}
+.lxm-header .lxm-mobile-panel{
+  display:none; flex-direction:column; gap:2px; padding:8px 0 18px;
+  border-top:1px solid rgba(139,112,96,.12);
+}
+.lxm-header .lxm-mobile-panel a{
+  display:block; padding:13px 4px; font-size:15.5px; font-weight:600; color:#4a3b30; text-decoration:none;
+  border-bottom:1px solid rgba(139,112,96,.08);
+}
+.lxm-header.lxm-menu-open .lxm-mobile-panel{display:flex;}
+
+/* products submenu — desktop */
+.lxm-header .lxm-links li{position:relative;}
+.lxm-header .lxm-menu-toggle{
+  background:none;border:none;font:inherit;font-weight:600;color:#4a3b30;cursor:pointer;
+  padding:4px 0;opacity:.85;display:inline-flex;align-items:center;gap:6px;
+}
+.lxm-header .lxm-menu-toggle:hover{opacity:1;}
+.lxm-header .lxm-menu-toggle svg{width:12px;height:12px;transition:transform .2s ease;}
+.lxm-header .lxm-sub{
+  position:absolute; top:calc(100% + 12px); inset-inline-start:0; min-width:240px;
+  background:#FBF8F4; border:1px solid rgba(139,112,96,.14); border-radius:16px;
+  box-shadow:0 14px 36px rgba(107,86,70,.14); padding:8px; list-style:none; margin:0; display:none;
+}
+.lxm-header .lxm-links li.lxm-has-sub:hover .lxm-sub,
+.lxm-header .lxm-links li.lxm-sub-open .lxm-sub{display:block;}
+.lxm-header .lxm-links li.lxm-sub-open .lxm-menu-toggle svg{transform:rotate(180deg);}
+.lxm-header .lxm-sub a{display:block;padding:10px 12px;border-radius:10px;font-size:14.5px;white-space:normal;opacity:.9;}
+.lxm-header .lxm-sub a:hover{background:#F3ECE3;opacity:1;}
+
+/* products submenu — inside the burger */
+.lxm-header .lxm-m-toggle{
+  display:flex;align-items:center;justify-content:space-between;width:100%;
+  background:none;border:none;font:inherit;font-weight:600;font-size:15.5px;color:#4a3b30;
+  padding:13px 4px;border-bottom:1px solid rgba(139,112,96,.08);cursor:pointer;text-align:start;
+}
+.lxm-header .lxm-m-toggle svg{width:14px;height:14px;transition:transform .2s ease;flex:none;}
+.lxm-header .lxm-m-sub{display:none;}
+.lxm-header .lxm-m-sub a{padding-inline-start:22px;font-size:14.5px;font-weight:500;opacity:.88;}
+.lxm-header .lxm-m-group.lxm-sub-open .lxm-m-sub{display:block;}
+.lxm-header .lxm-m-group.lxm-sub-open .lxm-m-toggle svg{transform:rotate(180deg);}
+
+@media(max-width:940px){
+  .lxm-header .lxm-links{display:none;}
+  .lxm-header .lxm-burger{display:flex;}
+}
+@media(min-width:941px){
+  .lxm-header .lxm-mobile-panel{display:none !important;}
+}
+
+.lxm-cart-drawer-overlay{position:fixed;inset:0;background:rgba(58,47,40,.4);opacity:0;pointer-events:none;transition:opacity .3s ease;z-index:200;}
+.lxm-cart-drawer-overlay.lxm-open{opacity:1;pointer-events:auto;}
+/* Physical right/left on purpose: inset-inline-end resolves to the LEFT edge under dir=rtl,
+   which combined with translateX(+100%) parked the panel mid-screen instead of off-screen. */
+.lxm-cart-drawer{
+  position:fixed; top:0; right:0; left:auto; height:100%; width:100%; max-width:420px;
+  background:#FAF6F1; z-index:201; display:flex; flex-direction:column;
+  transform:translateX(calc(100% + 24px)); transition:transform .35s ease, visibility .35s ease;
+  font-family:'Assistant',sans-serif; direction:rtl;
+  pointer-events:none; visibility:hidden;
+}
+.lxm-cart-drawer.lxm-open{transform:translateX(0); pointer-events:auto; visibility:visible; box-shadow:-10px 0 40px rgba(0,0,0,.15);}
+.lxm-cart-drawer-head{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid rgba(139,112,96,.15);}
+.lxm-cart-drawer-head h3{font-family:'Frank Ruhl',serif;font-size:19px;color:#4a3b30;margin:0;}
+.lxm-cart-drawer-close{background:none;border:none;cursor:pointer;color:#4a3b30;padding:8px;position:relative;z-index:5;}
+.lxm-cart-drawer-close svg{pointer-events:none;}
+.lxm-cart-drawer-body{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:18px;}
+.lxm-cart-line{display:flex;gap:14px;}
+.lxm-cart-line img{width:76px;height:76px;border-radius:14px;object-fit:cover;background:#F3ECE3;flex:none;}
+.lxm-cart-line-info{flex:1;display:flex;flex-direction:column;gap:6px;}
+.lxm-cart-line-title{font-size:14.5px;font-weight:600;color:#4a3b30;text-decoration:none;display:block;}
+.lxm-cart-line-title:hover{text-decoration:underline;}
+.lxm-cart-line > a{flex:none;display:block;}
+.lxm-cart-line-variant{font-size:12.5px;opacity:.65;}
+.lxm-cart-line-qty{display:flex;align-items:center;gap:10px;margin-top:4px;}
+.lxm-cart-line-qty button{width:26px;height:26px;border-radius:50%;border:1px solid rgba(139,112,96,.3);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#4a3b30;font-size:15px;line-height:1;}
+.lxm-cart-line-qty span{min-width:16px;text-align:center;font-size:14px;}
+.lxm-cart-line-price{font-family:'Frank Ruhl',serif;font-weight:700;color:#6b5646;white-space:nowrap;direction:ltr;unicode-bidi:isolate;}
+.lxm-cart-line-remove{font-size:12px;opacity:.5;text-decoration:underline;cursor:pointer;background:none;border:none;padding:0;margin-top:2px;color:#4a3b30;align-self:flex-start;}
+.lxm-cart-empty{text-align:center;padding:36px 20px 4px;opacity:.6;font-size:15px;}
+/* Empty-state shelf. Deliberately quieter than a product card: it is a way out
+   of an empty cart, not a second storefront. */
+.lxm-cart-sugg-title{font-size:13px;font-weight:700;color:#6b5646;letter-spacing:.04em;text-align:center;
+  margin:18px 0 14px;padding-top:18px;border-top:1px solid rgba(139,112,96,.15);}
+.lxm-cart-sugg{display:flex;align-items:center;gap:12px;padding:9px 0;}
+.lxm-cart-sugg img{width:54px;height:54px;border-radius:11px;object-fit:cover;background:#F3ECE3;flex:none;}
+.lxm-cart-sugg-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.lxm-cart-sugg-name{font-size:14px;font-weight:600;color:#4a3b30;text-decoration:none;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lxm-cart-sugg-name:hover{text-decoration:underline;}
+.lxm-cart-sugg-price{font-size:13px;opacity:.65;direction:ltr;unicode-bidi:isolate;}
+.lxm-cart-sugg-add{flex:none;background:none;border:1.5px solid #8B7060;color:#8B7060;border-radius:999px;
+  padding:7px 17px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.lxm-cart-sugg-add:hover{background:#8B7060;color:#fff;}
+.lxm-cart-sugg-add[disabled]{opacity:.5;cursor:default;}
+.lxm-cart-loading{text-align:center;padding:60px 20px;opacity:.55;font-size:15px;}
+/* Shown instead of a silent failure, so a dropped request never looks like an
+   empty cart. */
+.lxm-cart-problem{text-align:center;padding:48px 20px;font-size:15px;color:#8a4a4d;}
+.lxm-cart-problem button{margin-top:14px;border:1px solid rgba(139,112,96,.35);background:none;border-radius:999px;padding:9px 20px;font-family:inherit;font-size:14px;cursor:pointer;color:#4a3b30;}
+.lxm-cart-note{margin:0 0 12px;font-size:13px;color:#8a4a4d;background:#f1dcdb;border-radius:12px;padding:10px 14px;text-align:center;}
+.lxm-cart-drawer-foot{padding:20px 24px 26px;border-top:1px solid rgba(139,112,96,.15);}
+.lxm-cart-saving-row{display:flex;justify-content:space-between;align-items:center;font-size:13.5px;font-weight:700;color:#8a4a4d;background:#f1dcdb;border-radius:12px;padding:10px 14px;margin-bottom:12px;}
+.lxm-cart-saving-amount{direction:ltr;unicode-bidi:isolate;}
+.lxm-cart-subtotal-row{display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:600;color:#4a3b30;margin-bottom:14px;}
+.lxm-cart-subtotal-amount{font-family:'Frank Ruhl',serif;font-size:19px;direction:ltr;unicode-bidi:isolate;}
+/* The /cart page is Horizon's, and its discount panel gives the form a fixed
+   height while the wrapper clips whatever overflows. Any field taller than that
+   box — a larger font, a wrapped button — is revealed and then cut off, so the
+   plus appears to open nothing. Letting the form size itself removes that
+   failure mode. The header renders on every page, so this reaches /cart. */
+.cart-discount__content{height:auto;}
+
+.lxm-visually-hidden{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}
+.lxm-cart-code{margin-bottom:14px;}
+.lxm-cart-code-row{display:flex;gap:8px;align-items:stretch;}
+.lxm-cart-code-input{flex:1 1 auto;min-width:0;border:1px solid rgba(139,112,96,.35);border-radius:10px;
+  padding:11px 12px;font:inherit;font-size:14px;color:#4a3b30;background:#fff;text-align:start;}
+/* iOS Safari zooms the whole page in when a focused field is under 16px.
+   Scoped to touch so the desktop sizing is untouched, and larger controls are
+   the right call on a phone anyway. */
+@media (pointer: coarse){ .lxm-cart-code-input{font-size:16px;} }
+
+.lxm-cart-code-input:focus{outline:2px solid #8B7060;outline-offset:1px;}
+.lxm-cart-code-btn{flex:0 0 auto;border:none;border-radius:10px;background:#4a3b30;color:#fff;font:inherit;
+  font-size:14px;font-weight:600;padding:11px 18px;cursor:pointer;}
+.lxm-cart-code-btn:hover{background:#8B7060;}
+.lxm-cart-code-btn[disabled]{opacity:.55;cursor:default;}
+.lxm-cart-code-msg{margin:8px 0 0;font-size:13px;line-height:1.5;}
+.lxm-cart-code-msg[data-state="error"]{color:#a3402f;}
+.lxm-cart-code-msg[data-state="ok"]{color:#4a7a3f;}
+.lxm-cart-code-list{list-style:none;margin:0 0 8px;padding:0;display:flex;flex-wrap:wrap;gap:6px;}
+.lxm-cart-code-list:empty{display:none;}
+.lxm-cart-code-pill{display:flex;align-items:center;gap:7px;background:#F3ECE3;color:#4a3b30;border-radius:999px;
+  padding:5px 8px 5px 12px;font-size:13px;font-weight:600;direction:ltr;unicode-bidi:isolate;}
+.lxm-cart-code-remove{border:none;background:none;color:#8B7060;cursor:pointer;padding:2px;line-height:0;border-radius:50%;}
+.lxm-cart-code-remove:hover{background:rgba(139,112,96,.18);}
+.lxm-cart-code-remove svg{width:13px;height:13px;}
+.lxm-cart-checkout-btn{display:block;width:100%;text-align:center;padding:16px;border-radius:999px;background:#8B7060;color:#fff;font-weight:700;font-size:16px;text-decoration:none;box-sizing:border-box;}
+.lxm-cart-checkout-btn:hover{background:#6b5646;}
+
+</style>
+
+{%- liquid
+  assign nav_bag = all_products['תיק-חיתולים-3-ב-1-luxamom']
+  assign nav_sling = all_products['מנשא-חיבוק-luxamom']
+  assign nav_warmer = all_products['מחמם-בקבוק-usb-נייד-luxamom']
+  assign nav_cushion = all_products['כרית-מגן-ראש-לפעוט-luxamom']
+  assign nav_belt = all_products['מגן-בטן-luxamom']
+-%}
+
+<header class="lxm-header">
+  <div class="lxm-h-wrap lxm-nav">
+    <button class="lxm-burger" type="button" aria-label="{{ 'accessibility.menu' | t }}">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <a href="{{ routes.root_url }}" class="lxm-logo">
+      <img src="{{ 'luxamom-logo.png' | asset_url }}" alt="{{ shop.name | default: 'LUXAMOM' }}">
+    </a>
+    <ul class="lxm-links">
+      <li><a href="{{ routes.root_url }}">בית</a></li>
+      {%- comment -%}
+        "מוצרים" opens the list instead of scrolling to an anchor: a shopper who
+        already knows which product she wants shouldn't have to land on the home
+        page and hunt for it.
+      {%- endcomment -%}
+      <li class="lxm-has-sub">
+        <button type="button" class="lxm-menu-toggle" data-sub-toggle aria-expanded="false">
+          מוצרים
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <ul class="lxm-sub">
+          {% if nav_bag %}<li><a href="{{ nav_bag.url }}">{{ nav_bag.title | remove: ' LUXAMOM' }}</a></li>{% endif %}
+          {% if nav_sling %}<li><a href="{{ nav_sling.url }}">{{ nav_sling.title | remove: ' LUXAMOM' }}</a></li>{% endif %}
+          {% if nav_warmer %}<li><a href="{{ nav_warmer.url }}">{{ nav_warmer.title | remove: ' LUXAMOM' }}</a></li>{% endif %}
+          {% if nav_cushion %}<li><a href="{{ nav_cushion.url }}">{{ nav_cushion.title | remove: ' LUXAMOM' }}</a></li>{% endif %}
+          {% if nav_belt %}<li><a href="{{ nav_belt.url }}">{{ nav_belt.title | remove: ' LUXAMOM' }}</a></li>{% endif %}
+        </ul>
+      </li>
+      {% if pages['about-luxa'] %}<li><a href="{{ pages['about-luxa'].url }}">אודות</a></li>{% endif %}
+      {% if pages['משלוחים-והחזרות'] %}<li><a href="{{ pages['משלוחים-והחזרות'].url }}">משלוחים והחזרות</a></li>{% endif %}
+      {% if pages['contact'] %}<li><a href="{{ pages['contact'].url }}">צור קשר</a></li>{% endif %}
+    </ul>
+    <div class="lxm-actions">
+      <a href="{{ routes.search_url }}" class="lxm-icon" aria-label="{{ 'general.search.title' | t }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </a>
+      <a href="{{ routes.cart_url }}" class="lxm-icon" aria-label="{{ 'sections.cart.title' | t }}" data-cart-toggle>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span class="lxm-cart-count" data-cart-count style="display:{% if cart.item_count > 0 %}flex{% else %}none{% endif %};">{{ cart.item_count }}</span>
+      </a>
+    </div>
+  </div>
+  <nav class="lxm-mobile-panel">
+    <a href="{{ routes.root_url }}">בית</a>
+    <div class="lxm-m-group">
+      <button type="button" class="lxm-m-toggle" data-m-sub-toggle aria-expanded="false">
+        מוצרים
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="lxm-m-sub">
+        {% if nav_bag %}<a href="{{ nav_bag.url }}">{{ nav_bag.title | remove: ' LUXAMOM' }}</a>{% endif %}
+        {% if nav_sling %}<a href="{{ nav_sling.url }}">{{ nav_sling.title | remove: ' LUXAMOM' }}</a>{% endif %}
+        {% if nav_warmer %}<a href="{{ nav_warmer.url }}">{{ nav_warmer.title | remove: ' LUXAMOM' }}</a>{% endif %}
+        {% if nav_cushion %}<a href="{{ nav_cushion.url }}">{{ nav_cushion.title | remove: ' LUXAMOM' }}</a>{% endif %}
+        {% if nav_belt %}<a href="{{ nav_belt.url }}">{{ nav_belt.title | remove: ' LUXAMOM' }}</a>{% endif %}
+      </div>
+    </div>
+    {% if pages['about-luxa'] %}<a href="{{ pages['about-luxa'].url }}">אודות</a>{% endif %}
+    {% if pages['משלוחים-והחזרות'] %}<a href="{{ pages['משלוחים-והחזרות'].url }}">משלוחים והחזרות</a>{% endif %}
+    {% if pages['contact'] %}<a href="{{ pages['contact'].url }}">צור קשר</a>{% endif %}
+  </nav>
+</header>
+
+<div class="lxm-cart-drawer-overlay" data-cart-overlay></div>
+<aside class="lxm-cart-drawer" data-cart-drawer aria-hidden="true">
+  <div class="lxm-cart-drawer-head">
+    <h3>הסל שלך</h3>
+    <button type="button" class="lxm-cart-drawer-close" data-cart-close aria-label="סגירה">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="lxm-cart-drawer-body" data-cart-body>
+    <p class="lxm-cart-empty">הסל שלך ריק</p>
+  </div>
+
+  {%- comment -%}
+    Products for the empty state only. An empty drawer is the one moment in the
+    cart where there is nothing to interrupt: she has not decided anything yet,
+    so offering the shelf is help rather than pressure. The moment a line exists
+    this list is gone and the cart is just a cart again.
+  {%- endcomment -%}
+  <script type="application/json" data-cart-products>
+    [
+      {%- assign sep = '' -%}
+      {%- for n in (1..5) -%}
+        {%- case n -%}
+          {%- when 1 -%}{%- assign cp = nav_belt -%}
+          {%- when 2 -%}{%- assign cp = nav_sling -%}
+          {%- when 3 -%}{%- assign cp = nav_warmer -%}
+          {%- when 4 -%}{%- assign cp = nav_cushion -%}
+          {%- when 5 -%}{%- assign cp = nav_bag -%}
+        {%- endcase -%}
+        {%- if cp != blank and cp.available -%}
+          {%- assign cpv = cp.selected_or_first_available_variant -%}
+          {{ sep }}{
+            "id": {{ cpv.id | json }},
+            "title": {{ cp.title | remove: ' LUXAMOM' | json }},
+            "price": {{ cpv.price | json }},
+            "priceText": {{ cpv.price | money_without_trailing_zeros | json }},
+            "image": {{ cp.featured_image | image_url: width: 160 | json }},
+            "url": {{ cp.url | json }}
+          }
+          {%- assign sep = ',' -%}
+        {%- endif -%}
+      {%- endfor -%}
+    ]
+  </script>
+  <div class="lxm-cart-drawer-foot" data-cart-foot style="display:none;">
+    {%- comment -%}
+      The cart shows what is in it. The four-product "complete the set" list and
+      its nudge used to sit here: a shopper who has decided was met with more
+      things to decide, at the one moment the shop should get out of her way.
+      The second-unit offer on the product page covers this ground earlier, and
+      better.
+    {%- endcomment -%}
+    {%- comment -%}
+      The discount field lives in the drawer, not only on the cart page: this is
+      where the shopper has the code in hand, and a field she has to go looking
+      for is a code she does not use.
+    {%- endcomment -%}
+    <div class="lxm-cart-code">
+      <ul class="lxm-cart-code-list" data-cart-codes></ul>
+      <div class="lxm-cart-code-row">
+        <label class="lxm-visually-hidden" for="lxm-cart-code-input">קוד הנחה</label>
+        <input type="text" id="lxm-cart-code-input" class="lxm-cart-code-input"
+               data-cart-code-input placeholder="יש לך קוד הנחה?" autocomplete="off"
+               autocapitalize="characters" spellcheck="false">
+        <button type="button" class="lxm-cart-code-btn" data-cart-code-apply>החלה</button>
+      </div>
+      <p class="lxm-cart-code-msg" data-cart-code-msg role="status" style="display:none;"></p>
+    </div>
+
+    <div class="lxm-cart-saving-row" data-cart-saving style="display:none;">
+      <span>חסכת בבאנדל</span>
+      <span class="lxm-cart-saving-amount" data-cart-saving-amount>₪0</span>
+    </div>
+    <div class="lxm-cart-saving-row lxm-cart-code-saving" data-cart-code-saving style="display:none;">
+      <span>הנחת קוד</span>
+      <span class="lxm-cart-saving-amount" data-cart-code-saving-amount>₪0</span>
+    </div>
+    <div class="lxm-cart-subtotal-row">
+      <span>סכום ביניים</span>
+      <span class="lxm-cart-subtotal-amount" data-cart-subtotal>₪0</span>
+    </div>
+    <a href="{{ routes.cart_url }}" class="lxm-cart-checkout-btn" data-cart-checkout>מעבר לתשלום</a>
+  </div>
+</aside>
+
+<script>
+(function(){
+  var header = document.currentScript.previousElementSibling;
+  if (!header || !header.classList.contains('lxm-header')) { header = document.querySelector('.lxm-header'); }
+  if (!header) return;
+  var burger = header.querySelector('.lxm-burger');
+  if (burger) {
+    burger.addEventListener('click', function(){
+      header.classList.toggle('lxm-menu-open');
+    });
+    header.querySelectorAll('.lxm-mobile-panel a').forEach(function(a){
+      a.addEventListener('click', function(){ header.classList.remove('lxm-menu-open'); });
+    });
+  }
+
+  // products submenu, both breakpoints
+  header.querySelectorAll('[data-sub-toggle],[data-m-sub-toggle]').forEach(function(btn){
+    var group = btn.parentElement;
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      var open = group.classList.toggle('lxm-sub-open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  });
+  document.addEventListener('click', function(e){
+    header.querySelectorAll('.lxm-sub-open').forEach(function(group){
+      if (group.contains(e.target)) return;
+      group.classList.remove('lxm-sub-open');
+      var btn = group.querySelector('[data-sub-toggle],[data-m-sub-toggle]');
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    });
+  });
+
+  // cart drawer
+  var drawer = document.querySelector('[data-cart-drawer]');
+  var overlay = document.querySelector('[data-cart-overlay]');
+  var body = document.querySelector('[data-cart-body]');
+  var foot = document.querySelector('[data-cart-foot]');
+  var subtotalEl = document.querySelector('[data-cart-subtotal]');
+  var savingEl = document.querySelector('[data-cart-saving]');
+  var savingAmountEl = document.querySelector('[data-cart-saving-amount]');
+  var cartToggles = document.querySelectorAll('[data-cart-toggle]');
+  var codeInput = document.querySelector('[data-cart-code-input]');
+  var codeApply = document.querySelector('[data-cart-code-apply]');
+  var codeMsg = document.querySelector('[data-cart-code-msg]');
+  var codeList = document.querySelector('[data-cart-codes]');
+  var codeSaving = document.querySelector('[data-cart-code-saving]');
+  var codeSavingAmount = document.querySelector('[data-cart-code-saving-amount]');
+
+  // Not every price is a round number any more, so the agorot have to survive
+  // into the subtotal and the saving row.
+  function money(cents){
+    var value = Math.round(cents) / 100;
+    var fraction = Math.round(value * 100) % 100 === 0 ? 0 : 2;
+    return '₪' + value.toLocaleString('he-IL', { minimumFractionDigits: fraction, maximumFractionDigits: 2 });
+  }
+
+  function esc(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  var lastCart = null;
+
+  /* ---- discount codes ----
+     Shopify applies codes through /cart/update.js, which takes the whole set as
+     one comma-joined string. A code the cart rejects comes back with
+     applicable:false rather than as an HTTP error, so the response has to be
+     read, not just checked for status. */
+  function codesOf(cart){
+    return ((cart && cart.discount_codes) || [])
+      .filter(function(d){ return d && d.code && d.applicable !== false; })
+      .map(function(d){ return d.code; });
+  }
+
+  function codeDiscount(cart){
+    return ((cart && cart.cart_level_discount_applications) || [])
+      .filter(function(a){ return a && a.type === 'discount_code'; })
+      .reduce(function(sum, a){ return sum + (a.total_allocated_amount || 0); }, 0);
+  }
+
+  function hasAutomatic(cart){
+    return ((cart && cart.cart_level_discount_applications) || [])
+      .some(function(a){ return a && a.type === 'automatic'; });
+  }
+
+  function setCodeMsg(text, state){
+    if (!codeMsg) return;
+    codeMsg.textContent = text || '';
+    if (text) { codeMsg.setAttribute('data-state', state); codeMsg.style.display = 'block'; }
+    else { codeMsg.removeAttribute('data-state'); codeMsg.style.display = 'none'; }
+  }
+
+  function renderCodes(cart){
+    if (!codeList) return;
+    var codes = codesOf(cart);
+    codeList.innerHTML = codes.map(function(code){
+      return '<li class="lxm-cart-code-pill" data-code="' + esc(code) + '">' +
+        '<span>' + esc(code) + '</span>' +
+        '<button type="button" class="lxm-cart-code-remove" data-cart-code-remove ' +
+          'aria-label="הסרת הקוד ' + esc(code) + '">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">' +
+          '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+        '</button></li>';
+    }).join('');
+    codeList.querySelectorAll('[data-cart-code-remove]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var pill = btn.closest('[data-code]');
+        sendCodes(codes.filter(function(c){ return c !== pill.getAttribute('data-code'); }), null);
+      });
+    });
+
+    var saved = codeDiscount(cart);
+    if (codeSaving) {
+      codeSaving.style.display = saved > 0 ? 'flex' : 'none';
+      if (saved > 0 && codeSavingAmount) codeSavingAmount.textContent = money(saved);
+    }
+  }
+
+  function sendCodes(codes, added){
+    if (codeApply) codeApply.disabled = true;
+    setCodeMsg('', null);
+    return fetch('/cart/update.js', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ discount: codes.join(',') })
+    })
+      .then(function(r){ return readJson(r).then(function(j){
+        if (!r.ok) throw new Error((j && j.description) || 'discount ' + r.status);
+        return j;
+      }); })
+      .then(function(cart){
+        if (!isCart(cart)) throw new Error('cart payload');
+        renderCart(cart);
+        if (added) {
+          var ok = codesOf(cart).some(function(c){ return c.toUpperCase() === added.toUpperCase(); });
+          if (ok) { setCodeMsg('הקוד הוחל.', 'ok'); if (codeInput) codeInput.value = ''; }
+          // The bundle discounts are automatic and do not combine with a code, so
+          // a rejected code usually means the cart already has a better deal.
+          // Saying "invalid" there would be both wrong and alarming.
+          else if (hasAutomatic(cart)) setCodeMsg('בסל שלך כבר פועלת הנחת באנדל, ולא ניתן לצרף אליה קוד.', 'error');
+          else setCodeMsg('הקוד לא תקף או לא חל על הפריטים בסל.', 'error');
+        }
+        return cart;
+      })
+      .catch(function(){ setCodeMsg('לא הצלחנו להחיל את הקוד כרגע. נסי שוב.', 'error'); })
+      .then(function(){ if (codeApply) codeApply.disabled = false; });
+  }
+
+  function submitCode(){
+    if (!codeInput) return;
+    var code = codeInput.value.trim();
+    if (!code) { setCodeMsg('צריך להקליד קוד.', 'error'); codeInput.focus(); return; }
+    var codes = codesOf(lastCart);
+    if (codes.some(function(c){ return c.toUpperCase() === code.toUpperCase(); })) {
+      setCodeMsg('הקוד הזה כבר בסל.', 'error');
+      return;
+    }
+    sendCodes(codes.concat([code]), code);
+  }
+
+  if (codeApply) codeApply.addEventListener('click', submitCode);
+  if (codeInput) codeInput.addEventListener('keydown', function(e){
+    // The field is not inside a <form>: Enter has to be wired by hand.
+    if (e.key === 'Enter') { e.preventDefault(); submitCode(); }
+  });
+
+  /* ---- the empty state ----
+     Rendered only when the cart has no lines. As soon as one exists the cart
+     goes back to being a plain list of what is in it. */
+  var suggestions = (function(){
+    var el = document.querySelector('[data-cart-products]');
+    if (!el) return [];
+    try { return JSON.parse(el.textContent) || []; } catch (e) { return []; }
+  })();
+
+  function suggestionsHtml(){
+    if (!suggestions.length) return '';
+    return '<p class="lxm-cart-sugg-title">אולי בשביל זה באת</p>' +
+      suggestions.map(function(p){
+        return '<div class="lxm-cart-sugg" data-sugg-variant="' + esc(p.id) + '">' +
+          '<a href="' + esc(p.url) + '" tabindex="-1" aria-hidden="true">' +
+            '<img src="' + esc(p.image) + '" alt="" loading="lazy"></a>' +
+          '<span class="lxm-cart-sugg-info">' +
+            '<a class="lxm-cart-sugg-name" href="' + esc(p.url) + '">' + esc(p.title) + '</a>' +
+            '<span class="lxm-cart-sugg-price">' + esc(p.priceText) + '</span>' +
+          '</span>' +
+          '<button type="button" class="lxm-cart-sugg-add" data-sugg-add>הוספה</button>' +
+        '</div>';
+      }).join('');
+  }
+
+  function wireSuggestions(){
+    if (!body) return;
+    body.querySelectorAll('[data-sugg-add]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var row = btn.closest('[data-sugg-variant]');
+        var variantId = row && row.getAttribute('data-sugg-variant');
+        if (!variantId) return;
+        btn.disabled = true;
+        btn.textContent = '…';
+        // renderCart replaces this whole list on success, so the button only has
+        // to be put back when the add failed and the row survives.
+        window.LXMCart.addItem(variantId, 1).catch(function(){
+          btn.disabled = false;
+          btn.textContent = 'הוספה';
+          showNote('לא הצלחנו להוסיף את הפריט. נסי שוב.');
+        });
+      });
+    });
+  }
+
+  function showLoading(){
+    if (!body) return;
+    body.innerHTML = '<p class="lxm-cart-loading">רגע, טוענים את הסל…</p>';
+    if (foot) foot.style.display = 'none';
+  }
+
+  // A visible, recoverable state. Before this, a failed request left the drawer
+  // silent and the shopper clicking the cart icon over and over.
+  function showProblem(){
+    if (!body) return;
+    body.innerHTML =
+      '<div class="lxm-cart-problem">' +
+        '<p>לא הצלחנו לטעון את הסל כרגע.</p>' +
+        '<button type="button" data-cart-retry>לנסות שוב</button>' +
+      '</div>';
+    if (foot) foot.style.display = 'none';
+    var retry = body.querySelector('[data-cart-retry]');
+    if (retry) retry.addEventListener('click', function(){ showLoading(); refresh(); });
+  }
+
+  function showNote(text){
+    if (!body) return;
+    var old = body.querySelector('.lxm-cart-note');
+    if (old) old.remove();
+    var note = document.createElement('p');
+    note.className = 'lxm-cart-note';
+    note.textContent = text;
+    body.insertBefore(note, body.firstChild);
+  }
+
+  function renderCart(cart){
+    if (!body) return;
+    if (!isCart(cart)) { showProblem(); return; }
+    // Held so the discount field knows which codes are already on the cart
+    // without a second round trip.
+    lastCart = cart;
+    renderCodes(cart);
+    var countEls = document.querySelectorAll('[data-cart-count]');
+    if (!cart.items.length) {
+      body.innerHTML = '<p class="lxm-cart-empty">הסל שלך ריק</p>' + suggestionsHtml();
+      wireSuggestions();
+      if (foot) foot.style.display = 'none';
+    } else {
+      body.innerHTML = cart.items.map(function(item){
+        // The title and image are links: tapping a product name in a cart is an
+        // obvious thing to do, and used to be a dead click.
+        var href = item.url || '#';
+        return '<div class="lxm-cart-line" data-line-key="' + esc(item.key) + '">' +
+          '<a href="' + esc(href) + '" tabindex="-1" aria-hidden="true"><img src="' + esc(item.image || '') + '" alt=""></a>' +
+          '<div class="lxm-cart-line-info">' +
+            '<a class="lxm-cart-line-title" href="' + esc(href) + '">' + esc(item.product_title) + '</a>' +
+            (item.variant_title && item.variant_title !== 'Default Title' ? '<span class="lxm-cart-line-variant">' + esc(item.variant_title) + '</span>' : '') +
+            '<div class="lxm-cart-line-qty">' +
+              '<button type="button" data-qty-decrease>−</button>' +
+              '<span>' + item.quantity + '</span>' +
+              '<button type="button" data-qty-increase>+</button>' +
+            '</div>' +
+            '<button type="button" class="lxm-cart-line-remove" data-line-remove>הסרה</button>' +
+          '</div>' +
+          '<span class="lxm-cart-line-price">' + money(item.final_line_price) + '</span>' +
+        '</div>';
+      }).join('');
+      if (foot) foot.style.display = 'block';
+      if (subtotalEl) subtotalEl.textContent = money(cart.total_price);
+
+      // Automatic bundle discounts land in total_discount; surface them so the
+      // saving is visible before checkout, not just at it.
+      var saved = cart.total_discount || 0;
+      if (savingEl) {
+        savingEl.style.display = saved > 0 ? 'flex' : 'none';
+        if (saved > 0 && savingAmountEl) savingAmountEl.textContent = money(saved);
+      }
+
+      body.querySelectorAll('[data-qty-increase]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var line = btn.closest('[data-line-key]');
+          var key = line.getAttribute('data-line-key');
+          var qtySpan = btn.previousElementSibling;
+          changeLine(key, parseInt(qtySpan.textContent, 10) + 1);
+        });
+      });
+      body.querySelectorAll('[data-qty-decrease]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var line = btn.closest('[data-line-key]');
+          var key = line.getAttribute('data-line-key');
+          var qtySpan = btn.nextElementSibling;
+          changeLine(key, parseInt(qtySpan.textContent, 10) - 1);
+        });
+      });
+      body.querySelectorAll('[data-line-remove]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var line = btn.closest('[data-line-key]');
+          changeLine(line.getAttribute('data-line-key'), 0);
+        });
+      });
+    }
+    countEls.forEach(function(el){
+      el.textContent = cart.item_count;
+      el.style.display = cart.item_count > 0 ? 'flex' : 'none';
+    });
+  }
+
+  // Every response is validated before it reaches renderCart. Shopify answers a
+  // rejected cart operation with a 422 whose body has no `items`, and an outage
+  // can answer with an HTML error page — both used to be rendered as an empty
+  // cart, or thrown as an uncaught error on the shopper's click.
+  function isCart(c){ return !!c && typeof c.item_count === 'number' && !!c.items; }
+
+  function readJson(r){
+    return r.json().then(function(j){ return j; }, function(){ return null; });
+  }
+
+  function fetchCart(){
+    return fetch('/cart.js', { headers: { 'Accept': 'application/json' } })
+      .then(function(r){
+        if (!r.ok) throw new Error('cart ' + r.status);
+        return readJson(r);
+      })
+      .then(function(c){
+        if (!isCart(c)) throw new Error('cart payload');
+        return c;
+      });
+  }
+
+  // Refreshes from /cart.js, which is the only source that is always right, and
+  // never leaves the shopper looking at a blank drawer.
+  function refresh(){
+    return fetchCart().then(renderCart).catch(showProblem);
+  }
+
+  function changeLine(key, qty){
+    return fetch('/cart/change.js', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+      body: JSON.stringify({ id: key, quantity: qty })
+    }).then(function(r){
+      return readJson(r).then(function(j){
+        if (r.ok && isCart(j)) { renderCart(j); return; }
+        // The change was refused. Keep the real cart on screen and say why.
+        return fetchCart().then(function(cart){
+          renderCart(cart);
+          showNote((j && j.description) || 'לא הצלחנו לעדכן את הכמות. נסי שוב.');
+        });
+      });
+    }).catch(function(){
+      showNote('אין חיבור כרגע. הכמות לא עודכנה.');
+    });
+  }
+
+  function openDrawer(){
+    if (!drawer) return;
+    drawer.classList.add('lxm-open');
+    if (overlay) overlay.classList.add('lxm-open');
+    drawer.setAttribute('aria-hidden', 'false');
+  }
+  function closeDrawer(){
+    if (!drawer) return;
+    drawer.classList.remove('lxm-open');
+    if (overlay) overlay.classList.remove('lxm-open');
+    drawer.setAttribute('aria-hidden', 'true');
+  }
+
+  cartToggles.forEach(function(a){
+    a.addEventListener('click', function(e){
+      e.preventDefault();
+      // The drawer opens first, unconditionally. Opening used to wait on
+      // /cart.js, so a dropped request meant the click did nothing at all.
+      openDrawer();
+      showLoading();
+      refresh();
+    });
+  });
+
+  /* Restored after being deleted by accident: removing the upsell block cut this
+     out with it, which left the drawer with no way to close — closeDrawer still
+     existed and nothing called it.
+
+     Delegated on document rather than bound to the button, so it does not depend
+     on the element reference captured at script-load time. Escape closes too. */
+  document.addEventListener('click', function(e){
+    if (e.target.closest('[data-cart-close]') || e.target === overlay || e.target.closest('[data-cart-overlay]')) {
+      closeDrawer();
+    }
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && drawer && drawer.classList.contains('lxm-open')) {
+      closeDrawer();
+    }
+  });
+
+  window.LXMCart = {
+    open: function(){ openDrawer(); showLoading(); return refresh(); },
+    close: closeDrawer,
+    addItem: function(variantId, qty){
+      return window.LXMCart.addItems([{ id: variantId, quantity: qty || 1 }]);
+    },
+    // Two lines in one request rather than two: a second round trip can half-fail
+    // and leave the cart holding one of the two the shopper asked for.
+    addItems: function(items){
+      var pending = fetch('/cart/add.js', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        body: JSON.stringify({ items: items })
+      }).then(function(r){
+        return readJson(r).then(function(j){
+          // Only a genuine add failure may reject. Callers treat a rejection as
+          // "nothing was added" and retry with a native form post — so rejecting
+          // after a successful add would put the item in the cart twice.
+          if (!r.ok) throw new Error((j && j.description) || 'add failed');
+          return j;
+        });
+      }).then(function(){
+        openDrawer();
+        showLoading();
+        return fetchCart().then(function(cart){
+          renderCart(cart);
+          return cart;
+        }).catch(function(){
+          // The item is in the cart; only the refresh failed. Say so and stop —
+          // never surface this as an add failure.
+          showProblem();
+          return null;
+        });
+      });
+
+      // The rejection is part of the contract — callers retry natively when the
+      // add genuinely failed. Attaching a handler here keeps a caller that
+      // forgets to catch from raising an unhandled rejection on the page, while
+      // the returned promise still rejects for callers that do catch.
+      pending.catch(function(){});
+      return pending;
+    }
+  };
+
+  // Priming the badge on page load must never throw: it runs on every page, and
+  // an uncaught rejection here was reported as a site error against whatever the
+  // shopper happened to click next.
+  fetchCart().then(function(cart){
+    document.querySelectorAll('[data-cart-count]').forEach(function(el){
+      el.textContent = cart.item_count;
+      el.style.display = cart.item_count > 0 ? 'flex' : 'none';
+    });
+  }).catch(function(){ /* leave the badge as rendered */ });
+})();
+</script>
+
+{%- comment -%}
+  Rendered from the header so it reaches every page, since the header is the one
+  section in every layout. The snippet excludes itself from the cart page.
+{%- endcomment -%}
+{% render 'luxamom-popup' %}
+
+{% schema %}
+{
+  "name": "LUXAMOM header",
+  "tag": "div",
+  "settings": [],
+  "presets": [{ "name": "LUXAMOM header" }]
+}
+{% endschema %}
