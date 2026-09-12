@@ -62,6 +62,11 @@
           </button>
         </form>
       </div>
+      {%- comment -%}
+        The popup that hands out the code never opens on /cart, so without this
+        line the field here is one a shopper has nothing to type into.
+      {%- endcomment -%}
+      {% render 'luxamom-code-hint' %}
       <div
         class="cart-discount__error hidden"
         role="alert"

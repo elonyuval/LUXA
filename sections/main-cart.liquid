@@ -17,7 +17,32 @@
       </div>
 
       <div class="cart-page__items">
+        {%- comment -%}
+          The same shelf the drawer mounts, so the two carts offer the same
+          products in the same order and neither can drift. Empty, it is the
+          three recommendations and the promise line, above the "keep shopping"
+          button rather than below it; with a cart, it is whatever is not in the
+          cart yet, so there is always one more thing she can add.
+        {%- endcomment -%}
+        {%- if cart.empty? -%}
+          <div
+            class="lxm-cart-shelf lxm-cart-shelf--page"
+            data-lxm-shelf="empty"
+            data-reload
+          ></div>
+        {%- endif -%}
+
         {%- content_for 'block', id: 'cart-page-items', type: '_cart-products' %}
+
+        {%- unless cart.empty? -%}
+          <div
+            class="lxm-cart-shelf lxm-cart-shelf--page"
+            data-lxm-shelf="more"
+            data-reload
+            data-item-count="{{ cart.item_count }}"
+            data-in-cart='[{% for item in cart.items %}{{ item.product.handle | json }}{% unless forloop.last %},{% endunless %}{% endfor %}]'
+          ></div>
+        {%- endunless -%}
       </div>
 
       {%- unless cart.empty? -%}
@@ -32,6 +57,18 @@
     </div>
   </div>
 </cart-items-component>
+
+{%- comment -%}
+  An empty cart shows three recommendations and nothing else. Anything else the
+  merchant has put on this page — the "אולי תרצי גם" product list, among others
+  — is a fourth, fifth and sixth product under the shelf, so the page stands
+  down to just the cart until there is something in it.
+{%- endcomment -%}
+{%- if cart.empty? -%}
+  <style>
+    #MainContent > .shopify-section:not(:has(.cart-page)) { display: none; }
+  </style>
+{%- endif -%}
 
 {% stylesheet %}
   .cart-page {

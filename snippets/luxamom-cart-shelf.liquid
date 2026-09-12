@@ -1,0 +1,314 @@
+{%- doc -%}
+  The cart shelf: the products a shopper can add without leaving the cart.
+
+  Rendered once per page from the header, like the popup, because the two carts
+  it serves are two different pieces of software — the drawer is markup this
+  theme builds in JS from /cart.js, and /cart is Horizon's own section — and a
+  shelf written twice is a shelf that drifts. Both mount the same markup:
+
+    <div class="lxm-cart-shelf" data-lxm-shelf="empty|more"
+         data-in-cart='["handle"]' data-item-count="2" [data-reload]></div>
+
+  Two states, because they are two different moments:
+    · empty — the three products below, in this order, and nothing else. An
+      empty cart is the one place in the shop with nothing to interrupt.
+    · more  — whatever is not in the cart yet, with the next discount tier
+      spelled out. It stays for the whole of the shop's side of the cart, so
+      there is always a way to add one more.
+
+  Nothing here applies a discount. The ladder is the automatic discounts in the
+  admin, which apply themselves on quantity the moment the line lands in the
+  cart; the rates come from luxamom-bundle-ladder so this and the home page card
+  can only ever show the same numbers.
+{%- enddoc -%}
+
+{%- liquid
+  assign shelf_bag = all_products['תיק-חיתולים-3-ב-1-luxamom']
+  assign shelf_sling = all_products['מנשא-חיבוק-luxamom']
+  assign shelf_belt = all_products['מגן-בטן-luxamom']
+  assign shelf_warmer = all_products['מחמם-בקבוק-usb-נייד-luxamom']
+  assign shelf_cushion = all_products['כרית-מגן-ראש-לפעוט-luxamom']
+-%}
+
+<style>
+.lxm-cart-shelf{direction:rtl;font-family:'Assistant','Segoe UI',sans-serif;color:#4a3b30;line-height:1.5;}
+/* A shelf with nothing to offer — everything already in the cart, or sold out —
+   leaves no gap behind it. */
+.lxm-cart-shelf:empty{display:none;}
+.lxm-cart-promise{margin:0 0 2px;text-align:center;font-size:13px;color:#8B7060;}
+.lxm-cart-sugg-title{font-size:13px;font-weight:700;color:#6b5646;letter-spacing:.04em;text-align:center;
+  margin:18px 0 14px;padding-top:18px;border-top:1px solid rgba(139,112,96,.15);}
+.lxm-cart-sugg{display:flex;align-items:center;gap:12px;padding:9px 0;}
+.lxm-cart-shelf img{width:54px;height:54px;border-radius:11px;object-fit:cover;background:#F3ECE3;flex:none;}
+.lxm-cart-sugg-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.lxm-cart-sugg-name{font-size:14px;font-weight:600;color:#4a3b30;text-decoration:none;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lxm-cart-sugg-name:hover{text-decoration:underline;}
+.lxm-cart-sugg-price{font-size:13px;opacity:.65;direction:ltr;unicode-bidi:isolate;}
+/* No colour is chosen for her. The placeholder is the selected option until she
+   picks, so an add before that has nothing to send and says so. */
+.lxm-cart-sugg-opts{margin-top:4px;max-width:170px;border:1px solid rgba(139,112,96,.3);border-radius:999px;
+  padding:6px 10px;font:inherit;font-size:13px;color:#4a3b30;background:#fff;direction:rtl;cursor:pointer;}
+/* iOS Safari zooms the whole page in when a focused field is under 16px. */
+@media (pointer: coarse){ .lxm-cart-sugg-opts{font-size:16px;} }
+.lxm-cart-sugg-hint{display:none;font-size:12px;font-weight:600;color:#a3402f;margin-top:2px;}
+.lxm-cart-sugg-hint.lxm-is-shown{display:block;}
+.lxm-cart-sugg-add{flex:none;align-self:center;background:none;border:1.5px solid #8B7060;color:#8B7060;
+  border-radius:999px;padding:7px 17px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.lxm-cart-sugg-add:hover{background:#8B7060;color:#fff;}
+.lxm-cart-sugg-add[disabled]{opacity:.5;cursor:default;}
+.lxm-cart-tiers{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;}
+.lxm-cart-tier{flex:1 1 86px;text-align:center;background:#F3ECE3;border-radius:10px;padding:7px 9px;
+  font-size:11.5px;line-height:1.35;color:#6b5646;}
+.lxm-cart-tier b{display:block;font-weight:700;font-size:12.5px;}
+.lxm-cart-fine{margin:8px 0 0;text-align:center;font-size:12px;opacity:.6;}
+.lxm-cart-nudge{margin:0 0 12px;background:#f1dcdb;color:#8a4a4d;border-radius:12px;padding:10px 14px;
+  text-align:center;font-size:13.5px;font-weight:600;}
+/* On /cart the shelf is a card of its own: the page around it is Horizon's, not
+   the drawer's warm surface. */
+.lxm-cart-shelf--page{max-width:520px;margin:22px auto 0;background:#FAF6F1;
+  border:1px solid rgba(139,112,96,.15);border-radius:18px;padding:6px 22px 20px;}
+.lxm-cart-shelf--page .lxm-cart-promise{margin-top:14px;}
+.lxm-cart-shelf--page .lxm-cart-sugg-title:first-child{border-top:none;padding-top:6px;}
+
+/* The discount-code hint styles live here, not in the hint snippet: this file is
+   rendered once per page and that one renders in both carts. */
+.lxm-cart-code-hint{margin:8px 0 0;font-size:12.5px;line-height:1.55;color:#6b5646;opacity:.9;
+  font-family:'Assistant','Segoe UI',sans-serif;direction:rtl;text-align:start;}
+.lxm-cart-code-hint b{font-weight:700;}
+.lxm-cart-code-hint-code{display:inline-block;background:#F3ECE3;border-radius:6px;padding:1px 7px;
+  font-weight:700;letter-spacing:.05em;direction:ltr;unicode-bidi:isolate;}
+</style>
+
+{%- comment -%}
+  Ordered bag → sling → belt → warmer → cushion. The first three are the empty
+  cart's shelf, flagged rather than sliced apart, so the empty state can never
+  quietly fill up with whatever else is in stock; the last two only ever appear
+  once there is already something in the cart.
+{%- endcomment -%}
+<script type="application/json" data-lxm-shelf-products>
+[
+  {%- assign shelf_sep = '' -%}
+  {%- for n in (1..5) -%}
+    {%- case n -%}
+      {%- when 1 -%}{%- assign sp = shelf_bag -%}{%- assign sp_empty = true -%}
+      {%- when 2 -%}{%- assign sp = shelf_sling -%}{%- assign sp_empty = true -%}
+      {%- when 3 -%}{%- assign sp = shelf_belt -%}{%- assign sp_empty = true -%}
+      {%- when 4 -%}{%- assign sp = shelf_warmer -%}{%- assign sp_empty = false -%}
+      {%- when 5 -%}{%- assign sp = shelf_cushion -%}{%- assign sp_empty = false -%}
+    {%- endcase -%}
+    {%- if sp == blank or sp.available == false -%}{%- continue -%}{%- endif -%}
+    {%- comment -%}
+      Products sold both singly and as a pair expose the quantity as a second
+      option; only the single unit belongs on a shelf like this.
+    {%- endcomment -%}
+    {%- assign sp_single_qty = sp.variants | map: 'option2' | uniq | first -%}
+    {{ shelf_sep }}{
+      "handle": {{ sp.handle | json }},
+      "title": {{ sp.title | remove: ' LUXAMOM' | json }},
+      "url": {{ sp.url | json }},
+      "image": {{ sp.featured_image | image_url: width: 160 | json }},
+      "priceText": {{ sp.price | money_without_trailing_zeros | json }},
+      "empty": {{ sp_empty | json }},
+      "options": [
+        {%- assign shelf_vsep = '' -%}
+        {%- for v in sp.variants -%}
+          {%- if v.option2 != blank and v.option2 != sp_single_qty -%}{%- continue -%}{%- endif -%}
+          {{ shelf_vsep }}{
+            "id": {{ v.id | json }},
+            "label": {{ v.option1 | default: v.title | json }},
+            "available": {{ v.available | json }}
+          }
+          {%- assign shelf_vsep = ',' -%}
+        {%- endfor -%}
+      ]
+    }
+    {%- assign shelf_sep = ',' -%}
+  {%- endfor -%}
+]
+</script>
+
+{%- comment -%}
+  The rates, read off the same ladder the home page bundle card renders.
+{%- endcomment -%}
+<div hidden data-lxm-shelf-tiers>{%- render 'luxamom-bundle-ladder', variant: 'data', count: 5 -%}</div>
+
+<script>
+(function(){
+  var dataEl = document.querySelector('[data-lxm-shelf-products]');
+  var tiersEl = document.querySelector('[data-lxm-shelf-tiers]');
+  if (!dataEl) return;
+
+  var products = [];
+  try { products = JSON.parse(dataEl.textContent) || []; } catch (e) { products = []; }
+  // A product with nothing sellable left has no colour to choose and no variant
+  // to add, so it is not something to put in front of her.
+  products = products.filter(function(p){ return (p.options || []).length; });
+  if (!products.length) return;
+
+  // Never more than three in an empty cart, whatever the data says.
+  var EMPTY_MAX = 3;
+  var MORE_MAX = 3;
+  var PROMISE = 'משלוח חינם תמיד · החזרה תוך 30 יום';
+
+  var tiers = (tiersEl ? Array.prototype.slice.call(tiersEl.querySelectorAll('[data-be-step]')) : [])
+    .map(function(el){
+      return {
+        n: parseInt(el.getAttribute('data-be-step'), 10),
+        rate: parseFloat(el.getAttribute('data-be-rate')) || 0
+      };
+    })
+    .filter(function(t){ return t.n > 1 && t.rate > 0; })
+    .sort(function(a, b){ return a.n - b.n; });
+
+  function esc(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // The discounts are quantity-based, so the cart's own item count is the input:
+  // two of one colour earns the same tier as two different products.
+  function rateFor(count){
+    var rate = 0;
+    tiers.forEach(function(t){ if (t.n <= count) rate = t.rate; });
+    return rate;
+  }
+
+  function nextTier(count){
+    var now = rateFor(count);
+    for (var i = 0; i < tiers.length; i++) {
+      if (tiers[i].n > count && tiers[i].rate > now) return tiers[i];
+    }
+    return null;
+  }
+
+  function cardHtml(p){
+    var opts = p.options || [];
+    var picker;
+    if (opts.length > 1) {
+      // Selected and disabled: it shows as the value, and it is not a choice —
+      // so nothing is added until she has actually picked a colour.
+      picker = '<select class="lxm-cart-sugg-opts" data-shelf-variant ' +
+          'aria-label="בחירת גוון עבור ' + esc(p.title) + '">' +
+          '<option value="" selected disabled>בחרי גוון</option>' +
+          opts.map(function(o){
+            return '<option value="' + esc(o.id) + '"' + (o.available ? '' : ' disabled') + '>' +
+              esc(o.label) + '</option>';
+          }).join('') +
+        '</select>';
+    } else {
+      picker = '<input type="hidden" data-shelf-variant value="' + (opts[0] ? esc(opts[0].id) : '') + '">';
+    }
+    return '<div class="lxm-cart-sugg" data-shelf-card>' +
+      '<a href="' + esc(p.url) + '" tabindex="-1" aria-hidden="true">' +
+        '<img src="' + esc(p.image) + '" alt="" loading="lazy"></a>' +
+      '<span class="lxm-cart-sugg-info">' +
+        '<a class="lxm-cart-sugg-name" href="' + esc(p.url) + '">' + esc(p.title) + '</a>' +
+        '<span class="lxm-cart-sugg-price">' + esc(p.priceText) + '</span>' +
+        picker +
+        '<span class="lxm-cart-sugg-hint" data-shelf-hint>בחרי גוון כדי להוסיף</span>' +
+      '</span>' +
+      '<button type="button" class="lxm-cart-sugg-add" data-shelf-add>הוספה לסל</button>' +
+    '</div>';
+  }
+
+  function tiersHtml(){
+    if (!tiers.length) return '';
+    return '<div class="lxm-cart-tiers">' + tiers.map(function(t){
+      return '<span class="lxm-cart-tier"><b>' + t.n + ' מוצרים</b>' + t.rate + '% הנחה</span>';
+    }).join('') + '</div>' +
+    '<p class="lxm-cart-fine">ההנחה נכנסת אוטומטית בסל — בלי קוד.</p>';
+  }
+
+  function nudgeHtml(count){
+    var t = nextTier(count);
+    if (!t) {
+      var rate = rateFor(count);
+      return rate ? '<p class="lxm-cart-nudge">הסל שלך בהנחה הגבוהה ביותר — ' + rate + '% הנחה</p>' : '';
+    }
+    var missing = t.n - count;
+    return '<p class="lxm-cart-nudge">' +
+      (missing === 1 ? 'עוד מוצר אחד' : 'עוד ' + missing + ' מוצרים') +
+      ' ותקבלי ' + t.rate + '% הנחה על כל הסל</p>';
+  }
+
+  function html(mode, inCart, count){
+    if (mode === 'empty') {
+      var shelf = products.filter(function(p){ return p.empty; }).slice(0, EMPTY_MAX);
+      if (!shelf.length) return '';
+      return '<p class="lxm-cart-promise">' + PROMISE + '</p>' +
+        '<p class="lxm-cart-sugg-title">אולי בשביל זה באת</p>' +
+        shelf.map(cardHtml).join('') +
+        tiersHtml();
+    }
+    var rest = products.filter(function(p){ return inCart.indexOf(p.handle) === -1; }).slice(0, MORE_MAX);
+    var nudge = nudgeHtml(count);
+    if (!rest.length && !nudge) return '';
+    return '<p class="lxm-cart-sugg-title">להוסיף לסט ולחסוך יותר</p>' +
+      nudge +
+      rest.map(cardHtml).join('');
+  }
+
+  function wire(root, reload){
+    root.querySelectorAll('[data-shelf-card]').forEach(function(card){
+      var picker = card.querySelector('[data-shelf-variant]');
+      var hint = card.querySelector('[data-shelf-hint]');
+      var btn = card.querySelector('[data-shelf-add]');
+      if (!picker || !btn) return;
+
+      picker.addEventListener('change', function(){
+        if (hint) hint.classList.remove('lxm-is-shown');
+      });
+
+      btn.addEventListener('click', function(){
+        if (!picker.value) {
+          if (hint) hint.classList.add('lxm-is-shown');
+          picker.focus();
+          return;
+        }
+        if (!window.LXMCart || !window.LXMCart.addItem) {
+          // No drawer on the page for some reason: the product page can still
+          // take the order.
+          window.location.href = card.querySelector('.lxm-cart-sugg-name').getAttribute('href');
+          return;
+        }
+        var label = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = '…';
+        window.LXMCart.addItem(picker.value, 1).then(function(){
+          // The drawer redraws itself and takes this card with it. The cart page
+          // is rendered server-side, so it has to come back for the new line.
+          if (reload) window.location.reload();
+        }).catch(function(){
+          btn.disabled = false;
+          btn.textContent = label;
+          if (hint) {
+            hint.textContent = 'לא הצלחנו להוסיף כרגע. נסי שוב.';
+            hint.classList.add('lxm-is-shown');
+          }
+        });
+      });
+    });
+  }
+
+  function mount(el){
+    var mode = el.getAttribute('data-lxm-shelf') === 'more' ? 'more' : 'empty';
+    var inCart = [];
+    try { inCart = JSON.parse(el.getAttribute('data-in-cart') || '[]') || []; } catch (e) { inCart = []; }
+    el.innerHTML = html(mode, inCart, parseInt(el.getAttribute('data-item-count'), 10) || 0);
+    wire(el, el.hasAttribute('data-reload'));
+  }
+
+  function mountAll(){
+    document.querySelectorAll('[data-lxm-shelf]').forEach(mount);
+  }
+
+  window.LXMShelf = { mount: mount, mountAll: mountAll };
+
+  // The cart page's own mount is in the page from the start; the drawer's are
+  // built later and mounted by the drawer itself.
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountAll);
+  else mountAll();
+})();
+</script>

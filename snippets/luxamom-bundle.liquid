@@ -4,11 +4,11 @@
   The product list and the discount ladder are both derived from whichever
   products are actually available, so a product that is still a draft (or is
   removed later) drops out of the card instead of hiding the whole section.
-  Each ladder step carries its own rate, and the script reads the rates from
-  the markup — the tiers live in one place.
 
-  The matching cart discounts are automatic discounts in the admin:
-  2 items → 10%, 3 items → 15%, 4 items → 20%.
+  The ladder itself is the luxamom-bundle-ladder snippet, shared with the cart
+  shelf so the two cannot show different numbers. Each step carries its own rate
+  and the script below reads the rates off the markup. They mirror the automatic
+  discounts in the admin, which are what actually takes the money off.
 
   Optional parameters:
     heading   — overrides the section title.
@@ -180,29 +180,7 @@
       </div>
 
       <div class="lxm-be-ladder">
-        <div class="lxm-be-step" data-be-step="1" data-be-rate="0"><b>מוצר אחד</b>מחיר מלא</div>
-        {%- for step in (2..be_count) -%}
-          {%- liquid
-            case step
-              when 2
-                assign step_rate = 10
-                assign step_name = 'שניים'
-              when 3
-                assign step_rate = 15
-                assign step_name = 'שלושה'
-              when 4
-                assign step_rate = 20
-                assign step_name = 'ארבעה'
-              when 5
-                assign step_rate = 25
-                assign step_name = 'חמישה'
-            endcase
-          -%}
-          <div class="lxm-be-step" data-be-step="{{ step }}" data-be-rate="{{ step_rate }}">
-            {%- if step == be_count -%}<span class="lxm-be-step-flag">המשתלם ביותר</span>{%- endif -%}
-            <b>{{ step_name }}</b>{{ step_rate }}% הנחה
-          </div>
-        {%- endfor -%}
+        {%- render 'luxamom-bundle-ladder', count: be_count -%}
       </div>
 
       <p class="lxm-be-next" data-be-next></p>

@@ -1,0 +1,51 @@
+{%- doc -%}
+  The bundle discount ladder — the one place the tiers are written down.
+
+  Every step carries its own rate in data-be-rate and each script reads the rate
+  off the markup, so the home page bundle card and the cart shelf cannot drift
+  apart. The tiers mirror the automatic discounts in the admin, which are the
+  thing that actually applies the money: 2 → 10%, 3 → 15%, 4 → 20%, 5 → 25%.
+
+  @param {number} [count] - the highest step to render (default 5)
+  @param {string} [variant] - 'full' renders the visible home page ladder,
+    'data' renders bare steps for a script to read the rates from
+{%- enddoc -%}
+
+{%- liquid
+  assign ladder_count = count | default: 5
+  assign ladder_variant = variant | default: 'full'
+-%}
+{%- for step in (1..ladder_count) -%}
+  {%- liquid
+    case step
+      when 1
+        assign step_rate = 0
+        assign step_name = 'מוצר אחד'
+        assign step_note = 'מחיר מלא'
+      when 2
+        assign step_rate = 10
+        assign step_name = 'שניים'
+      when 3
+        assign step_rate = 15
+        assign step_name = 'שלושה'
+      when 4
+        assign step_rate = 20
+        assign step_name = 'ארבעה'
+      when 5
+        assign step_rate = 25
+        assign step_name = 'חמישה'
+    endcase
+
+    if step > 1
+      assign step_note = step_rate | append: '% הנחה'
+    endif
+  -%}
+  {%- if ladder_variant == 'data' -%}
+    <span data-be-step="{{ step }}" data-be-rate="{{ step_rate }}"></span>
+  {%- else -%}
+    <div class="lxm-be-step" data-be-step="{{ step }}" data-be-rate="{{ step_rate }}">
+      {%- if step == ladder_count and ladder_count > 1 -%}<span class="lxm-be-step-flag">המשתלם ביותר</span>{%- endif -%}
+      <b>{{ step_name }}</b>{{ step_note }}
+    </div>
+  {%- endif -%}
+{%- endfor -%}
