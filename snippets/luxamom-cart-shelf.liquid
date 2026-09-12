@@ -35,7 +35,13 @@
 /* A shelf with nothing to offer — everything already in the cart, or sold out —
    leaves no gap behind it. */
 .lxm-cart-shelf:empty{display:none;}
-.lxm-cart-promise{margin:0 0 2px;text-align:center;font-size:13px;color:#8B7060;}
+.lxm-trust{display:flex;gap:8px;list-style:none;margin:0 0 12px;padding:0;direction:rtl;
+  font-family:'Assistant','Segoe UI',sans-serif;}
+.lxm-trust-item{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;
+  text-align:center;background:#F3ECE3;border-radius:12px;padding:10px 5px;
+  font-size:11.5px;font-weight:600;color:#6b5646;line-height:1.3;}
+.lxm-trust-item svg{width:18px;height:18px;flex:none;fill:none;stroke:#8B7060;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round;}
 .lxm-cart-sugg-title{font-size:13px;font-weight:700;color:#6b5646;letter-spacing:.04em;text-align:center;
   margin:18px 0 14px;padding-top:18px;border-top:1px solid rgba(139,112,96,.15);}
 .lxm-cart-sugg{display:flex;align-items:center;gap:12px;padding:9px 0;}
@@ -76,6 +82,7 @@
 .lxm-cart-code-hint{margin:8px 0 0;font-size:12.5px;line-height:1.55;color:#6b5646;opacity:.9;
   font-family:'Assistant','Segoe UI',sans-serif;direction:rtl;text-align:start;}
 .lxm-cart-code-hint b{font-weight:700;}
+.lxm-cart-code-hint a{color:#8B7060;font-weight:700;text-decoration:underline;}
 .lxm-cart-code-hint-code{display:inline-block;background:#F3ECE3;border-radius:6px;padding:1px 7px;
   font-weight:700;letter-spacing:.05em;direction:ltr;unicode-bidi:isolate;}
 </style>
@@ -129,6 +136,12 @@
 </script>
 
 {%- comment -%}
+  The empty state is built in JS, so the promises are parked in a template for it
+  to clone rather than written out a second time in the script.
+{%- endcomment -%}
+<template data-lxm-trust-tpl>{% render 'luxamom-cart-trust' %}</template>
+
+{%- comment -%}
   The rates, read off the same ladder the home page bundle card renders.
 {%- endcomment -%}
 <div hidden data-lxm-shelf-tiers>{%- render 'luxamom-bundle-ladder', variant: 'data', count: 5 -%}</div>
@@ -149,7 +162,12 @@
   // Never more than three in an empty cart, whatever the data says.
   var EMPTY_MAX = 3;
   var MORE_MAX = 3;
-  var PROMISE = 'משלוח חינם תמיד · החזרה תוך 30 יום';
+  // The promises are written once, in Liquid, and cloned from the template
+  // below — the same markup the footers render, never a second copy in here.
+  var TRUST = (function(){
+    var tpl = document.querySelector('[data-lxm-trust-tpl]');
+    return tpl ? tpl.innerHTML : '';
+  })();
 
   var tiers = (tiersEl ? Array.prototype.slice.call(tiersEl.querySelectorAll('[data-be-step]')) : [])
     .map(function(el){
@@ -237,7 +255,7 @@
     if (mode === 'empty') {
       var shelf = products.filter(function(p){ return p.empty; }).slice(0, EMPTY_MAX);
       if (!shelf.length) return '';
-      return '<p class="lxm-cart-promise">' + PROMISE + '</p>' +
+      return TRUST +
         '<p class="lxm-cart-sugg-title">אולי בשביל זה באת</p>' +
         shelf.map(cardHtml).join('') +
         tiersHtml();

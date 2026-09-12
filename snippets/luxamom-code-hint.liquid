@@ -1,16 +1,17 @@
 {%- doc -%}
-  The one line that tells a shopper a code exists at all.
+  The line that tells a shopper a first-order discount exists, next to the
+  discount field in both carts.
 
-  It sits next to the discount field in both carts — the drawer's and the
-  Horizon cart page's — because the popup that hands the code out never opens on
-  /cart, and a field with nothing to type into it is a field she skips.
+  It does NOT print the code. The code is the reward for joining the list, and a
+  code sitting in the cart for everyone to read is a code nobody has to join for
+  — so this points at the way in and lets the signup hand it over, on the home
+  page's "משפחת LUXAMOM" section or in the popup.
 
-  The code is the live "משפחת LUXAMOM" discount in the admin: 10%, once per
-  customer, handed out on signing up to the list. Change it in one place here if
-  that discount is ever renamed.
+  The discount itself is the live 10%-off, once-per-customer code in the admin,
+  handed out by luxamom-club and luxamom-popup.
 {%- enddoc -%}
 
 <p class="lxm-cart-code-hint">
-  אין לך קוד? מצטרפות לרשימת התפוצה ומקבלות
-  <b>10% הנחה על ההזמנה הראשונה</b> — הקוד <span class="lxm-cart-code-hint-code">LUXAMOM10</span>
+  אין לך קוד? <a href="{{ routes.root_url }}#club">מצטרפות לרשימת התפוצה</a>
+  ומקבלות <b>10% הנחה על ההזמנה הראשונה</b> — הקוד מופיע מיד עם ההרשמה.
 </p>
